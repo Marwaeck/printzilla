@@ -79,6 +79,9 @@ pub struct Config {
     /// Programs the person added for "Öffnen mit".
     #[serde(default)]
     pub custom_programs: Vec<crate::externals::CustomProgram>,
+    /// Show the PrintZilla symbol in the menu bar (macOS) / notification area (Windows).
+    #[serde(default = "yes")]
+    pub show_menu_icon: bool,
 }
 
 fn default_repo() -> String {
@@ -131,6 +134,7 @@ impl Config {
             check_updates: true,
             program_paths: Default::default(),
             custom_programs: Vec::new(),
+            show_menu_icon: true,
         }
     }
 

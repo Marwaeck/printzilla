@@ -106,3 +106,13 @@ fn solidcraft_is_offered_for_print_files() {
         assert!(sc.location.is_some(), "installiertes SolidCraft wurde nicht gefunden");
     }
 }
+
+#[test]
+fn menu_icon_renders() {
+    let n = 44;
+    let px = crate::logo::menu_icon_rgba(n);
+    assert_eq!(px.len(), n * n * 4);
+    assert!(px.chunks(4).any(|p| p[3] > 200), "symbol must not be empty");
+    let big = crate::logo::menu_icon_rgba(256);
+    image::save_buffer(workdir("menuicon").join("menu.png"), &big, 256, 256, image::ExtendedColorType::Rgba8).unwrap();
+}

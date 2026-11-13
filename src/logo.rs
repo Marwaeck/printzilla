@@ -118,7 +118,11 @@ pub fn logo_rgba(size: usize) -> Vec<u8> {
         }
     }
 
-    // downsample
+    finish(&c, size, ss)
+}
+
+/// Averages the supersampled canvas down to `size` × `size` RGBA pixels.
+fn finish(c: &Canvas, size: usize, ss: usize) -> Vec<u8> {
     let mut out = vec![0u8; size * size * 4];
     for y in 0..size {
         for x in 0..size {
@@ -147,4 +151,52 @@ pub fn logo_rgba(size: usize) -> Vec<u8> {
         }
     }
     out
+}
+
+/// The small symbol for the menu bar (macOS) or the notification area (Windows):
+/// the same cube of little cubes, as a black shape with three shades on transparent
+/// ground. macOS turns it white on dark menu bars by itself ("template image").
+pub fn menu_icon_rgba(size: usize) -> Vec<u8> {
+    let ss = 8;
+    let mut c = Canvas::new(size * ss);
+    let (cx, top, hw, hh, h) = (0.5f32, 0.01f32, 0.37f32, 0.205f32, 0.37f32);
+    let n = 3usize;
+    let gap = 0.09f32;
+    // the print plate under the cube (flat, lighter), like in the app icon
+    let (pc, phw, phh, th) = (top + hh + h + 0.02, 0.49f32, 0.27f32, 0.055f32);
+    // outline of the cube; the plate is left out there so it never shows through the gaps
+    let hex = [
+        (cx, top),
+        (cx + hw, top + hh),
+        (cx + hw, top + hh + h),
+        (cx, top + 2.0 * hh + h),
+        (cx - hw, top + hh + h),
+        (cx - hw, top + hh),
+    ];
+    let under_cube = move |x: f32, y: f32| {
+        (0..hex.len()).all(|i| {
+            let (a, b) = (hex[i], hex[(i + 1) % hex.len()]);
+            (b.0 - a.0) * (y - a.1) - (b.1 - a.1) * (x - a.0) >= -0.004
+        })
+    };
+    let plate = move |alpha: u8| move |x: f32, y: f32| -> Col { [0, 0, 0, if under_cube(x, y) { 0 } else { alpha }] };
+    c.poly(&[(cx - phw, pc), (cx, pc + phh), (cx, pc + phh + th), (cx - phw, pc + th)], &plate(170));
+    c.poly(&[(cx, pc + phh), (cx + phw, pc), (cx + phw, pc + th), (cx, pc + phh + th)], &plate(120));
+    c.poly(&[(cx, pc - phh), (cx + phw, pc), (cx, pc + phh), (cx - phw, pc)], &plate(80));
+    let faces: [((f32, f32), (f32, f32), (f32, f32), u8); 3] = [
+        ((cx, top + 2.0 * hh), (hw, -hh), (-hw, -hh), 255),
+        ((cx - hw, top + hh), (hw, hh), (0.0, h), 205),
+        ((cx, top + 2.0 * hh), (hw, -hh), (0.0, h), 140),
+    ];
+    for (p0, u, v, alpha) in faces {
+        let at = |a: f32, b: f32| (p0.0 + u.0 * a + v.0 * b, p0.1 + u.1 * a + v.1 * b);
+        for i in 0..n {
+            for j in 0..n {
+                let (a0, a1) = ((i as f32 + gap) / n as f32, (i as f32 + 1.0 - gap) / n as f32);
+                let (b0, b1) = ((j as f32 + gap) / n as f32, (j as f32 + 1.0 - gap) / n as f32);
+                c.poly(&[at(a0, b0), at(a1, b0), at(a1, b1), at(a0, b1)], &move |_, _| [0, 0, 0, alpha]);
+            }
+        }
+    }
+    finish(&c, size, ss)
 }

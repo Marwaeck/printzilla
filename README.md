@@ -16,6 +16,8 @@ OBJ-Modelle direkt in 3D an.
   verschieben, zoomen, Ansichten von vorne, von der Seite und von oben, Maße in Millimetern.
 - **Direkt öffnen:** per Rechtsklick „In SolidCraft öffnen“ oder „Öffnen mit“ Bambu Studio,
   OrcaSlicer, PrusaSlicer, Cura oder einem selbst gewählten Programm.
+- **Symbol in der Menüleiste** (macOS) bzw. im Infobereich (Windows): PrintZilla öffnen,
+  Dateien importieren oder nach Updates suchen – mit einem Klick.
 - **Ordnen und finden:** Ordner, Schlagworte, Favoriten, Beschreibung, Filter nach Dateityp,
   Suche, frei einstellbare Größe der Vorschaubilder.
 - **Updates:** PrintZilla sucht beim Start nach einer neuen Version und installiert sie auf

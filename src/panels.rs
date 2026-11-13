@@ -70,6 +70,12 @@ impl DamApp {
                     let ctx = ui.ctx().clone();
                     self.open_updates(&ctx);
                 }
+                ui.separator();
+                let mut on = self.cfg.show_menu_icon;
+                if ui.checkbox(&mut on, crate::tray::setting_label()).changed() {
+                    let ctx = ui.ctx().clone();
+                    self.set_menu_icon(&ctx, on);
+                }
                 ui.label(RichText::new(format!("Version {}", crate::updater::CURRENT_VERSION)).size(11.0).color(MUTED));
             });
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {

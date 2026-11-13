@@ -15,6 +15,7 @@ mod panels;
 mod render;
 #[cfg(test)]
 mod tests;
+mod tray;
 mod update_ui;
 mod updater;
 mod viewer;

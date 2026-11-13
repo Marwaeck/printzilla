@@ -93,6 +93,8 @@ pub struct DamApp {
     card_tex: Option<Option<TextureHandle>>,
     /// Programs for "Öffnen mit" (looked up at start and when the list changes).
     pub programs: Vec<crate::externals::Program>,
+    /// The symbol in the menu bar / notification area (None when switched off).
+    pub menu_icon: Option<crate::tray::MenuIcon>,
     screenshot: Option<Screenshot>,
 }
 
@@ -145,6 +147,7 @@ impl DamApp {
             updater: Default::default(),
             card_tex: None,
             programs: Vec::new(),
+            menu_icon: None,
             screenshot: screenshot.map(|path| Screenshot {
                 path,
                 frame: 0,
@@ -153,6 +156,9 @@ impl DamApp {
             }),
         };
         app.programs = crate::externals::programs(&app.cfg);
+        if app.persist && app.cfg.show_menu_icon {
+            app.menu_icon = crate::tray::MenuIcon::create(&cc.egui_ctx);
+        }
         // look for a new version in the background (never while taking preview pictures)
         if app.persist && app.cfg.check_updates {
             let repo = app.cfg.update_repo.clone();
@@ -259,6 +265,32 @@ impl DamApp {
         self.programs = crate::externals::programs(&self.cfg);
         if let Some(key) = self.programs.iter().find(|p| p.location.as_deref() == Some(custom.path.as_path())).map(|p| p.key.clone()) {
             self.open_in(ctx, &key, id);
+        }
+    }
+
+    /// Switches the menu bar symbol on or off and remembers the choice.
+    pub fn set_menu_icon(&mut self, ctx: &egui::Context, on: bool) {
+        self.cfg.show_menu_icon = on;
+        self.menu_icon = if on { crate::tray::MenuIcon::create(ctx) } else { None };
+        self.save_cfg();
+    }
+
+    fn handle_menu_icon(&mut self, ctx: &egui::Context) {
+        let actions = self.menu_icon.as_ref().map(|m| m.poll()).unwrap_or_default();
+        for a in actions {
+            use crate::tray::TrayAction;
+            if a == TrayAction::Quit {
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                continue;
+            }
+            ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
+            ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(false));
+            ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
+            match a {
+                TrayAction::Import => self.open_import(None),
+                TrayAction::Updates => self.open_updates(ctx),
+                _ => {}
+            }
         }
     }
 
@@ -609,6 +641,7 @@ impl eframe::App for DamApp {
             });
 
         self.updater.poll();
+        self.handle_menu_icon(&ctx);
         self.import_window(&ctx);
         self.remove_dialog(&ctx);
         self.update_window(&ctx);
