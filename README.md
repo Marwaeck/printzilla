@@ -1,3 +1,5 @@
+![PrintZilla](assets/printzilla.png)
+
 # PrintZilla
 
 **Eine Bibliothek für deine 3D-Druck-Dateien – für Windows und macOS.**
