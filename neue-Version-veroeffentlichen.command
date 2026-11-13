@@ -34,11 +34,15 @@ git diff --cached --quiet || git commit -m "Version $NEW${NOTES:+: $NOTES}"
 git pull --rebase origin main
 
 if [ -z "$NOTES" ]; then
-  NOTES=$(git log -1 --format=%B | grep -v '^Co-Authored-By' || true)
+  if git rev-parse -q --verify "refs/tags/v$NEW" >/dev/null; then
+    # a prepared tag already carries the "Was ist neu" text
+    NOTES=$(git tag -l --format='%(contents)' "v$NEW")
+  else
+    NOTES=$(git log -1 --format=%B | grep -v '^Co-Authored-By' || true)
+  fi
 fi
-if ! git rev-parse -q --verify "refs/tags/v$NEW" >/dev/null; then
-  git tag -a "v$NEW" -m "$NOTES"
-fi
+# (re)create the tag on the current state, so changes pulled from GitHub are included
+git tag -f -a "v$NEW" -m "$NOTES" >/dev/null
 
 git push origin main
 git push origin "v$NEW"
