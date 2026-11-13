@@ -94,3 +94,15 @@ fn writes_icon_files() {
     let small = crate::logo::logo_rgba(256);
     image::save_buffer(dir.join("printzilla.ico"), &small, 256, 256, image::ExtendedColorType::Rgba8).unwrap();
 }
+
+#[test]
+fn solidcraft_is_offered_for_print_files() {
+    let cfg = Config::with_dir(workdir("programme"));
+    let progs = crate::externals::programs(&cfg);
+    let sc = progs.iter().find(|p| p.key == "solidcraft").expect("SolidCraft wird immer angeboten");
+    assert!(sc.supports("3mf") && sc.supports("stl") && sc.supports("step"));
+    assert!(!sc.supports("gcode"));
+    if cfg!(target_os = "macos") && std::path::Path::new("/Applications/SolidCraft.app").exists() {
+        assert!(sc.location.is_some(), "installiertes SolidCraft wurde nicht gefunden");
+    }
+}

@@ -91,6 +91,8 @@ pub struct DamApp {
     pub show_groups: bool,
     pub updater: crate::updater::Updater,
     card_tex: Option<Option<TextureHandle>>,
+    /// Programs for "Öffnen mit" (looked up at start and when the list changes).
+    pub programs: Vec<crate::externals::Program>,
     screenshot: Option<Screenshot>,
 }
 
@@ -142,6 +144,7 @@ impl DamApp {
             show_groups: true,
             updater: Default::default(),
             card_tex: None,
+            programs: Vec::new(),
             screenshot: screenshot.map(|path| Screenshot {
                 path,
                 frame: 0,
@@ -149,6 +152,7 @@ impl DamApp {
                 done: Arc::new(AtomicBool::new(false)),
             }),
         };
+        app.programs = crate::externals::programs(&app.cfg);
         // look for a new version in the background (never while taking preview pictures)
         if app.persist && app.cfg.check_updates {
             let repo = app.cfg.update_repo.clone();
@@ -215,6 +219,46 @@ impl DamApp {
             Filter::Recent => "Zuletzt importiert".into(),
             Filter::Type(t) => type_name(t).to_string(),
             Filter::Tag(t) => t.clone(),
+        }
+    }
+
+    /// Opens a library file in the program with this key (asks where it is if needed).
+    pub fn open_in(&mut self, ctx: &egui::Context, key: &str, id: u64) {
+        let Some(e) = self.entry(id).cloned() else { return };
+        let Some(prog) = self.programs.iter().find(|p| p.key == key).cloned() else { return };
+        let location = match prog.location.clone() {
+            Some(l) => l,
+            None => {
+                let title = format!("Wo ist {} installiert?", prog.name);
+                match crate::externals::pick_program(&title) {
+                    Some(l) => {
+                        self.cfg.program_paths.insert(prog.key.clone(), l.clone());
+                        self.save_cfg();
+                        self.programs = crate::externals::programs(&self.cfg);
+                        l
+                    }
+                    None => return,
+                }
+            }
+        };
+        match crate::externals::launch(&location, &self.lib.file_path(&e)) {
+            Ok(()) => self.notify(ctx, format!("»{}« wird in {} geöffnet", e.name, prog.name)),
+            Err(err) => self.notify(ctx, err),
+        }
+    }
+
+    /// Lets the person pick any program, adds it to "Öffnen mit" and opens the file in it.
+    pub fn add_program_and_open(&mut self, ctx: &egui::Context, id: u64) {
+        let Some(path) = crate::externals::pick_program("Programm zum Öffnen wählen") else { return };
+        let name = crate::externals::name_from_path(&path);
+        let custom = crate::externals::CustomProgram { name, path };
+        if !self.cfg.custom_programs.contains(&custom) {
+            self.cfg.custom_programs.push(custom.clone());
+            self.save_cfg();
+        }
+        self.programs = crate::externals::programs(&self.cfg);
+        if let Some(key) = self.programs.iter().find(|p| p.location.as_deref() == Some(custom.path.as_path())).map(|p| p.key.clone()) {
+            self.open_in(ctx, &key, id);
         }
     }
 

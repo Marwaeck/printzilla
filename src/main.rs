@@ -6,6 +6,7 @@ mod card;
 mod content;
 mod inspector;
 mod examples;
+mod externals;
 mod import_ui;
 mod library;
 mod logo;

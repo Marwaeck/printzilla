@@ -174,8 +174,39 @@ impl DamApp {
                 self.big_view = true;
             }
             ui.add_space(2.0);
-            if wide_button(ui, RichText::new("Mit Standardprogramm öffnen")).on_hover_text("z. B. im Slicer").clicked() {
-                open_path(&self.lib.file_path(&e), false);
+            let programs = self.programs.clone();
+            let mut open_in: Option<String> = None;
+            let mut add_program = false;
+            if let Some(p) = programs.iter().find(|p| p.key == crate::externals::PREFERRED && p.supports(&e.ext)) {
+                let b = egui::Button::new(RichText::new(format!("In {} öffnen", p.name)).color(Color32::WHITE).strong()).fill(ACCENT);
+                if ui.add_sized([ui.available_width(), 30.0], b).clicked() {
+                    open_in = Some(p.key.clone());
+                }
+                ui.add_space(2.0);
+            }
+            ui.horizontal(|ui| {
+                ui.set_width(ui.available_width());
+                ui.menu_button(RichText::new("Öffnen mit  ▾").color(TEXT), |ui| {
+                    for p in programs.iter().filter(|p| p.key != crate::externals::PREFERRED && p.supports(&e.ext)) {
+                        if ui.button(&p.name).clicked() {
+                            open_in = Some(p.key.clone());
+                        }
+                    }
+                    if ui.button("Standardprogramm").clicked() {
+                        open_path(&self.lib.file_path(&e), false);
+                    }
+                    ui.separator();
+                    if ui.button("Anderes Programm hinzufügen …").clicked() {
+                        add_program = true;
+                    }
+                });
+            });
+            let ctx = ui.ctx().clone();
+            if let Some(key) = open_in {
+                self.open_in(&ctx, &key, id);
+            }
+            if add_program {
+                self.add_program_and_open(&ctx, id);
             }
             ui.add_space(2.0);
             if wide_button(ui, RichText::new("⮉  Exportieren …")).on_hover_text("Eine Kopie an einem anderen Ort speichern").clicked() {

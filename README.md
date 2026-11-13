@@ -18,6 +18,8 @@ OBJ-Modelle direkt in 3D an.
   Kopie sicher in der Bibliothek liegt.
 - **3D-Ansicht** für 3MF (auch mehrteilige Projekte aus Slicern), STL und OBJ: drehen,
   verschieben, zoomen, Ansichten von vorne, von der Seite und von oben, Maße in Millimetern.
+- **Direkt öffnen:** per Rechtsklick „In SolidCraft öffnen“ oder „Öffnen mit“ Bambu Studio,
+  OrcaSlicer, PrusaSlicer, Cura oder einem selbst gewählten Programm.
 - **Ordnen und finden:** Ordner, Schlagworte, Favoriten, Beschreibung, Filter nach Dateityp,
   Suche, frei einstellbare Größe der Vorschaubilder.
 - **Updates:** PrintZilla sucht beim Start nach einer neuen Version und installiert sie auf

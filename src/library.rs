@@ -73,6 +73,12 @@ pub struct Config {
     /// Look for a new version when the program starts.
     #[serde(default = "yes")]
     pub check_updates: bool,
+    /// Where programs were found when PrintZilla had to ask (key -> location).
+    #[serde(default)]
+    pub program_paths: std::collections::HashMap<String, PathBuf>,
+    /// Programs the person added for "Öffnen mit".
+    #[serde(default)]
+    pub custom_programs: Vec<crate::externals::CustomProgram>,
 }
 
 fn default_repo() -> String {
@@ -123,6 +129,8 @@ impl Config {
             folder_as_tag: true,
             update_repo: default_repo(),
             check_updates: true,
+            program_paths: Default::default(),
+            custom_programs: Vec::new(),
         }
     }
 

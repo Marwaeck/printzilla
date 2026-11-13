@@ -10,6 +10,8 @@ enum CardAction {
     Select,
     Big,
     Open,
+    OpenIn(String),
+    AddProgram,
     Reveal,
     Favorite,
     Remove,
@@ -29,6 +31,7 @@ impl DamApp {
         let mut budget = 8usize;
         let mut action: Option<(u64, CardAction)> = None;
         let mut open_group: Option<String> = None;
+        let programs = self.programs.clone();
 
         // groups ("folders") only on the overview
         let groups: Vec<(String, usize, Option<Entry>)> = if self.filter == Filter::All && self.search.is_empty() {
@@ -91,7 +94,7 @@ impl DamApp {
                     ui.spacing_mut().item_spacing.x = gap;
                     for e in row {
                         let tex = self.thumb(&ctx, e, &mut budget);
-                        if let Some(a) = tile(ui, e, tex.as_ref(), self.selected == Some(e.id), cell) {
+                        if let Some(a) = tile(ui, e, tex.as_ref(), self.selected == Some(e.id), cell, &programs) {
                             action = Some((e.id, a));
                         }
                     }
@@ -123,6 +126,8 @@ impl DamApp {
                         open_path(&self.lib.file_path(e), true);
                     }
                 }
+                CardAction::OpenIn(key) => self.open_in(&ctx, &key, id),
+                CardAction::AddProgram => self.add_program_and_open(&ctx, id),
                 CardAction::Favorite => {
                     if let Some(e) = self.entry_mut(id) {
                         e.favorite = !e.favorite;
@@ -164,7 +169,7 @@ fn centered_text(p: &egui::Painter, top_center: Pos2, text: &str, size: f32, col
 }
 
 /// A file in the grid: picture without frame, name and size centred below.
-fn tile(ui: &mut egui::Ui, e: &Entry, tex: Option<&TextureHandle>, selected: bool, cell: f32) -> Option<CardAction> {
+fn tile(ui: &mut egui::Ui, e: &Entry, tex: Option<&TextureHandle>, selected: bool, cell: f32, programs: &[crate::externals::Program]) -> Option<CardAction> {
     let size = Vec2::new(cell, cell + 50.0);
     let (rect, resp) = ui.allocate_exact_size(size, Sense::click());
     let img = Rect::from_min_size(rect.min, Vec2::splat(cell));
@@ -217,9 +222,26 @@ fn tile(ui: &mut egui::Ui, e: &Entry, tex: Option<&TextureHandle>, selected: boo
         if model3d::can_preview(&e.ext) && ui.button("In 3D ansehen").clicked() {
             action = Some(CardAction::Big);
         }
-        if ui.button("Mit Standardprogramm öffnen").clicked() {
-            action = Some(CardAction::Open);
+        // the preferred program (SolidCraft) right at the top
+        for p in programs.iter().filter(|p| p.key == crate::externals::PREFERRED && p.supports(&e.ext)) {
+            if ui.button(RichText::new(format!("In {} öffnen", p.name)).strong()).clicked() {
+                action = Some(CardAction::OpenIn(p.key.clone()));
+            }
         }
+        ui.menu_button("Öffnen mit", |ui| {
+            for p in programs.iter().filter(|p| p.key != crate::externals::PREFERRED && p.supports(&e.ext)) {
+                if ui.button(&p.name).clicked() {
+                    action = Some(CardAction::OpenIn(p.key.clone()));
+                }
+            }
+            if ui.button("Standardprogramm").clicked() {
+                action = Some(CardAction::Open);
+            }
+            ui.separator();
+            if ui.button("Anderes Programm hinzufügen …").clicked() {
+                action = Some(CardAction::AddProgram);
+            }
+        });
         if ui.button(reveal_label()).clicked() {
             action = Some(CardAction::Reveal);
         }
