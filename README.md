@@ -6,7 +6,7 @@ PrintZilla sammelt 3MF-, STL-, OBJ-, STEP- und G-Code-Dateien aus beliebigen Ord
 (z. B. dem Download-Ordner) in einer aufgeräumten Bibliothek und zeigt 3MF-, STL- und
 OBJ-Modelle direkt in 3D an.
 
-<img src="assets/screenshot" alt="PrintZilla">
+<img src="assets/screenshot.png" alt="PrintZilla">
 
 ## Was PrintZilla kann
 
