@@ -1,4 +1,6 @@
-![PrintZilla](assets/printzilla.png)
+<p align="center">
+  <img src="assets/printzilla.png" alt="PrintZilla">
+</p>
 
 # PrintZilla
 
