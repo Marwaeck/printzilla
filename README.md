@@ -1,7 +1,5 @@
 <h1 align="left"><img src="assets/printzilla.png" height="36" alt="PrintZilla"> PrintZilla</h1>
 
-![PrintZilla – Bibliothek für 3D-Druck-Dateien](assets/social-card.png)
-
 **Eine Bibliothek für deine 3D-Druck-Dateien – für Windows und macOS.**
 
 PrintZilla sammelt 3MF-, STL-, OBJ-, STEP- und G-Code-Dateien aus beliebigen Ordnern
@@ -24,10 +22,6 @@ OBJ-Modelle direkt in 3D an.
   Suche, frei einstellbare Größe der Vorschaubilder.
 - **Updates:** PrintZilla sucht beim Start nach einer neuen Version und installiert sie auf
   Wunsch selbst (Menü „PrintZilla ▾“ → „Nach Updates suchen …“).
-
-## So sieht es aus
-
-![PrintZilla mit Bibliothek und 3D-Ansicht](assets/screenshot.png)
 
 ## Herunterladen
 
