@@ -1,0 +1,23 @@
+# Checks on every change that PrintZilla still builds and its tests pass on Windows and macOS.
+
+name: Prüfen
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bauen
+        run: cargo build
+      - name: Tests
+        run: cargo test

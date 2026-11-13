@@ -1,0 +1,128 @@
+# Builds PrintZilla for Windows and macOS whenever a version tag (e.g. v0.2.0) is pushed,
+# and publishes the downloads as a GitHub release. The in-app updater reads these releases.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            exe: printzilla.exe
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            exe: printzilla
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            exe: printzilla
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Version aus dem Tag übernehmen
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [[ "$TAG" == v* ]]; then
+            VERSION="${TAG#v}"
+            perl -0pi -e "s/^version = \"[^\"]+\"/version = \"$VERSION\"/m" Cargo.toml
+          fi
+          VERSION=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Bauen
+        run: cargo build --release --locked --target ${{ matrix.target }} || cargo build --release --target ${{ matrix.target }}
+
+      - name: Paket für die Update-Funktion
+        run: |
+          mkdir -p dist
+          cp "target/${{ matrix.target }}/release/${{ matrix.exe }}" dist/
+          cd dist
+          NAME="printzilla-v${VERSION}-${{ matrix.target }}.zip"
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            7z a "$NAME" "${{ matrix.exe }}"
+          else
+            zip "$NAME" "${{ matrix.exe }}"
+          fi
+          rm "${{ matrix.exe }}"
+
+      - name: macOS-App (PrintZilla.app)
+        if: runner.os == 'macOS'
+        run: |
+          ARCH=$([[ "${{ matrix.target }}" == aarch64* ]] && echo "AppleSilicon" || echo "Intel")
+          APP="dist/PrintZilla.app"
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          cp "target/${{ matrix.target }}/release/printzilla" "$APP/Contents/MacOS/printzilla"
+          ICONSET=$(mktemp -d)/printzilla.iconset
+          mkdir -p "$ICONSET"
+          for s in 16 32 128 256 512; do
+            sips -z $s $s assets/printzilla.png --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
+            sips -z $((s*2)) $((s*2)) assets/printzilla.png --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
+          done
+          iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/printzilla.icns"
+          cat > "$APP/Contents/Info.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>CFBundleName</key><string>PrintZilla</string>
+            <key>CFBundleDisplayName</key><string>PrintZilla</string>
+            <key>CFBundleIdentifier</key><string>io.github.printzilla</string>
+            <key>CFBundleExecutable</key><string>printzilla</string>
+            <key>CFBundleIconFile</key><string>printzilla</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>CFBundleShortVersionString</key><string>${VERSION}</string>
+            <key>CFBundleVersion</key><string>${VERSION}</string>
+            <key>LSMinimumSystemVersion</key><string>11.0</string>
+            <key>NSHighResolutionCapable</key><true/>
+          </dict></plist>
+          PLIST
+          sed -i '' 's/^          //' "$APP/Contents/Info.plist"
+          codesign --force --deep --sign - "$APP" || true
+          cd dist
+          ditto -c -k --keepParent PrintZilla.app "PrintZilla-macOS-${ARCH}.zip"
+          rm -rf PrintZilla.app
+
+      - name: Windows-Download mit verständlichem Namen
+        if: runner.os == 'Windows'
+        run: |
+          cp "target/${{ matrix.target }}/release/printzilla.exe" dist/PrintZilla.exe
+          cd dist
+          7z a "PrintZilla-Windows.zip" PrintZilla.exe
+          rm PrintZilla.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.target }}
+          path: dist/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: PrintZilla ${{ github.ref_name }}
+          generate_release_notes: true
+          files: dist/*
