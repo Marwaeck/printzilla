@@ -1,4 +1,4 @@
-<h1 align="center"><img src="assets/printzilla.png" width="72" alt="PrintZilla">&nbsp; PrintZilla</h1>
+<h1 align="left"><img src="assets/printzilla.png" height="36" alt="PrintZilla"> PrintZilla</h1>
 
 **Eine Bibliothek für deine 3D-Druck-Dateien – für Windows und macOS.**
 
