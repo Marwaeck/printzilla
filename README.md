@@ -1,5 +1,7 @@
 <h1 align="left"><img src="assets/printzilla.png" height="36" alt="PrintZilla"> PrintZilla</h1>
 
+![PrintZilla – Bibliothek für 3D-Druck-Dateien](assets/social-card.png)
+
 **Eine Bibliothek für deine 3D-Druck-Dateien – für Windows und macOS.**
 
 PrintZilla sammelt 3MF-, STL-, OBJ-, STEP- und G-Code-Dateien aus beliebigen Ordnern
@@ -20,6 +22,10 @@ OBJ-Modelle direkt in 3D an.
   Suche, frei einstellbare Größe der Vorschaubilder.
 - **Updates:** PrintZilla sucht beim Start nach einer neuen Version und installiert sie auf
   Wunsch selbst (Menü „PrintZilla ▾“ → „Nach Updates suchen …“).
+
+## So sieht es aus
+
+![PrintZilla mit Bibliothek und 3D-Ansicht](assets/screenshot.png)
 
 ## Herunterladen
 
@@ -50,6 +56,16 @@ Die Bibliothek liegt standardmäßig im Ordner `Dokumente/3D-Druck-Bibliothek`. 
 3. GitHub baut automatisch die Windows- und Mac-Version und legt sie als Release ab
    (siehe `.github/workflows/release.yml`). Danach bieten alle installierten PrintZilla-Programme
    das Update an.
+
+## Vorschaubild für GitHub
+
+`assets/social-card.png` (1280 × 640) ist das Vorschaubild für Links auf dieses Repository.
+Hochladen unter *Settings → General → Social preview → Edit → Upload an image*.
+Neu erzeugen mit:
+
+```sh
+PRINTZILLA_SOCIAL_CARD=1 cargo run -- --screenshot assets/social-card.png
+```
 
 ## Selbst bauen
 

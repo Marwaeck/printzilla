@@ -90,6 +90,7 @@ pub struct DamApp {
     pub chip_fav: bool,
     pub show_groups: bool,
     pub updater: crate::updater::Updater,
+    card_tex: Option<Option<TextureHandle>>,
     screenshot: Option<Screenshot>,
 }
 
@@ -140,6 +141,7 @@ impl DamApp {
             chip_fav: false,
             show_groups: true,
             updater: Default::default(),
+            card_tex: None,
             screenshot: screenshot.map(|path| Screenshot {
                 path,
                 frame: 0,
@@ -476,6 +478,14 @@ impl DamApp {
                 if let Some(dir) = path.parent() {
                     let _ = std::fs::create_dir_all(dir);
                 }
+                // the GitHub card must be exactly 1280 × 640
+                let (buf, w, h) = if crate::card::enabled() {
+                    let src = image::RgbaImage::from_raw(w as u32, h as u32, buf).expect("Bildgröße");
+                    let out = image::imageops::resize(&src, crate::card::SIZE[0] as u32, crate::card::SIZE[1] as u32, image::imageops::FilterType::Lanczos3);
+                    (out.into_raw(), crate::card::SIZE[0] as usize, crate::card::SIZE[1] as usize)
+                } else {
+                    (buf, w, h)
+                };
                 if let Err(e) = image::save_buffer(&path, &buf, w as u32, h as u32, image::ExtendedColorType::Rgba8) {
                     eprintln!("Bild konnte nicht gespeichert werden: {e}");
                 }
@@ -501,6 +511,21 @@ impl eframe::App for DamApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
         self.handle_screenshot(&ctx);
+        if crate::card::enabled() {
+            // picture for the GitHub page instead of the normal window
+            let tex = self.card_tex.get_or_insert_with(|| {
+                let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets").join("screenshot.png");
+                image::open(path).ok().map(|img| {
+                    let img = img.to_rgba8();
+                    let (w, h) = img.dimensions();
+                    let ci = egui::ColorImage::from_rgba_unmultiplied([w as usize, h as usize], img.as_raw());
+                    ctx.load_texture("card-shot", ci, egui::TextureOptions::LINEAR)
+                })
+            });
+            let tex = tex.clone();
+            egui::CentralPanel::no_frame().show(ui, |ui| crate::card::draw(ui, tex.as_ref()));
+            return;
+        }
         self.poll_import(&ctx);
         self.ensure_viewer(&ctx);
         if self.import.as_ref().map(|d| d.running.is_some()).unwrap_or(false) {

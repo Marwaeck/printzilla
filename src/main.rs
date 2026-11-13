@@ -2,6 +2,7 @@
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
 mod app;
+mod card;
 mod content;
 mod inspector;
 mod examples;
@@ -33,6 +34,10 @@ fn main() -> eframe::Result {
         .with_inner_size([1360.0, 840.0])
         .with_min_inner_size([900.0, 560.0])
         .with_icon(egui::IconData { rgba: logo::logo_rgba(256), width: 256, height: 256 });
+
+    if card::enabled() {
+        viewport = viewport.with_min_inner_size([320.0, 160.0]).with_inner_size(card::SIZE).with_resizable(false);
+    }
 
     if screenshot.is_some() {
         viewport = viewport.with_active(false);
