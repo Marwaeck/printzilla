@@ -1,6 +1,7 @@
 // no console window next to the program on Windows
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
+mod about_ui;
 mod app;
 mod card;
 mod content;

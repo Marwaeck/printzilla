@@ -116,3 +116,14 @@ fn menu_icon_renders() {
     let big = crate::logo::menu_icon_rgba(256);
     image::save_buffer(workdir("menuicon").join("menu.png"), &big, 256, 256, image::ExtendedColorType::Rgba8).unwrap();
 }
+
+#[test]
+fn license_texts_are_built_in() {
+    assert!(crate::about_ui::LICENSE_TEXT.starts_with("MIT License"));
+    assert!(crate::about_ui::LICENSE_TEXT.contains("Marwaeck"));
+    let tp = crate::about_ui::THIRD_PARTY_TEXT;
+    for name in ["- eframe ", "- egui ", "- epaint_default_fonts ", "- self_update ", "- tray-icon "] {
+        assert!(tp.contains(name), "{name} fehlt in THIRD_PARTY_LICENSES.txt");
+    }
+    assert!(tp.contains("OFL.txt") && tp.contains("UFL.txt"), "Schriftlizenzen fehlen");
+}

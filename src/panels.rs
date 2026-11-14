@@ -65,6 +65,10 @@ impl DamApp {
                     self.change_library();
                 }
                 ui.separator();
+                if ui.button("Über PrintZilla …").clicked() {
+                    ui.close();
+                    self.about.open = true;
+                }
                 if ui.button("Nach Updates suchen …").clicked() {
                     ui.close();
                     let ctx = ui.ctx().clone();

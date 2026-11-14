@@ -70,6 +70,7 @@ jobs:
           APP="dist/PrintZilla.app"
           mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
           cp "target/${{ matrix.target }}/release/printzilla" "$APP/Contents/MacOS/printzilla"
+          cp LICENSE THIRD_PARTY_LICENSES.txt "$APP/Contents/Resources/"
           ICONSET=$(mktemp -d)/printzilla.iconset
           mkdir -p "$ICONSET"
           for s in 16 32 128 256 512; do
@@ -103,9 +104,11 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           cp "target/${{ matrix.target }}/release/printzilla.exe" dist/PrintZilla.exe
+          cp LICENSE dist/LICENSE.txt
+          cp THIRD_PARTY_LICENSES.txt dist/
           cd dist
-          7z a "PrintZilla-Windows.zip" PrintZilla.exe
-          rm PrintZilla.exe
+          7z a "PrintZilla-Windows.zip" PrintZilla.exe LICENSE.txt THIRD_PARTY_LICENSES.txt
+          rm PrintZilla.exe LICENSE.txt THIRD_PARTY_LICENSES.txt
 
       - uses: actions/upload-artifact@v4
         with:

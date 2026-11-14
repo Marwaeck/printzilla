@@ -95,6 +95,7 @@ pub struct DamApp {
     pub programs: Vec<crate::externals::Program>,
     /// The symbol in the menu bar / notification area (None when switched off).
     pub menu_icon: Option<crate::tray::MenuIcon>,
+    pub about: crate::about_ui::About,
     screenshot: Option<Screenshot>,
 }
 
@@ -148,6 +149,7 @@ impl DamApp {
             card_tex: None,
             programs: Vec::new(),
             menu_icon: None,
+            about: Default::default(),
             screenshot: screenshot.map(|path| Screenshot {
                 path,
                 frame: 0,
@@ -163,6 +165,10 @@ impl DamApp {
         if app.persist && app.cfg.check_updates {
             let repo = app.cfg.update_repo.clone();
             app.updater.start_check(&cc.egui_ctx, &repo, true);
+        }
+        // preview pictures only: show the "Über PrintZilla" window
+        if !app.persist && std::env::var_os("PRINTZILLA_DEMO_ABOUT").is_some() {
+            app.about.open = true;
         }
         // preview pictures only: show the update window
         if !app.persist && std::env::var_os("PRINTZILLA_DEMO_UPDATE").is_some() {
@@ -645,6 +651,7 @@ impl eframe::App for DamApp {
         self.import_window(&ctx);
         self.remove_dialog(&ctx);
         self.update_window(&ctx);
+        self.about_window(&ctx);
 
         if let Some((text, until)) = self.toast.clone() {
             let now = ctx.input(|i| i.time);

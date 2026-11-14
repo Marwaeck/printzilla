@@ -4,6 +4,8 @@ version = "0.2.1"
 edition = "2021"
 description = "PrintZilla – eine Bibliothek für 3D-Druck-Dateien mit 3MF-Ansicht"
 repository = "https://github.com/Marwaeck/printzilla"
+license = "MIT"
+authors = ["Marwaeck"]
 
 [[bin]]
 name = "printzilla"

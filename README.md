@@ -74,3 +74,20 @@ cargo test               # Tests
 
 Gebaut mit [egui/eframe](https://github.com/emilk/egui). Die 3D-Ansicht zeichnet PrintZilla
 selbst, ohne Grafikkarten-Abhängigkeiten.
+
+## Lizenz
+
+PrintZilla ist freie Software unter der [MIT-Lizenz](LICENSE) – © 2026 Marwaeck.
+Du darfst das Programm benutzen, weitergeben und verändern, solange der
+Urheberrechtsvermerk erhalten bleibt. Es wird ohne Gewährleistung bereitgestellt.
+Das gilt auch für das PrintZilla-Symbol und die Bilder in `assets/`.
+
+PrintZilla enthält freie Bibliotheken und Schriften anderer Autorinnen und Autoren
+(u. a. unter MIT-, Apache-2.0-, BSD-, Zlib-, OFL- und Ubuntu-Font-Lizenz). Ihre Lizenzen und
+Urheberrechtsvermerke stehen in [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt) und in
+PrintZilla unter „PrintZilla ▾“ → „Über PrintZilla …“. Nach dem Ändern von Abhängigkeiten
+neu erzeugen mit `python3 tools/third_party_licenses.py`.
+
+SolidCraft, Bambu Studio, OrcaSlicer, PrusaSlicer und UltiMaker Cura sind Marken ihrer
+jeweiligen Inhaber. PrintZilla steht in keiner Verbindung zu ihnen.
+
