@@ -168,3 +168,14 @@ fn watcher_reports_finished_new_files_and_respects_ignore() {
     wait(&mut w);
     assert!(w.pending.is_empty(), "ignorierte Datei darf nicht mehr gemeldet werden");
 }
+
+#[test]
+fn icon_with_number_renders() {
+    let dir = workdir("badge");
+    for n in [0usize, 3, 12] {
+        let px = crate::logo::logo_with_badge(256, n);
+        assert_eq!(px.len(), 256 * 256 * 4);
+        image::save_buffer(dir.join(format!("badge-{n}.png")), &px, 256, 256, image::ExtendedColorType::Rgba8).unwrap();
+    }
+    assert_eq!(crate::logo::logo_with_badge(64, 0), crate::logo::logo_rgba(64));
+}

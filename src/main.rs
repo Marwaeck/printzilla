@@ -3,6 +3,7 @@
 
 mod about_ui;
 mod app;
+mod badge;
 mod card;
 mod content;
 mod inspector;

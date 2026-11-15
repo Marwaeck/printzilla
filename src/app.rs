@@ -357,6 +357,10 @@ impl DamApp {
             if let Some(m) = &self.menu_icon {
                 m.set_pending(n);
             }
+            // number on the app icon (Dock / taskbar); never in preview pictures
+            if self.persist {
+                crate::badge::set(ctx, n);
+            }
         }
     }
 

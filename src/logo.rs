@@ -156,6 +156,7 @@ fn finish(c: &Canvas, size: usize, ss: usize) -> Vec<u8> {
 /// The small symbol for the menu bar (macOS) or the notification area (Windows):
 /// the same cube of little cubes, as a black shape with three shades on transparent
 /// ground. macOS turns it white on dark menu bars by itself ("template image").
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))] // menu bar symbol on macOS
 pub fn menu_icon_rgba(size: usize) -> Vec<u8> {
     let ss = 8;
     let mut c = Canvas::new(size * ss);
@@ -199,4 +200,80 @@ pub fn menu_icon_rgba(size: usize) -> Vec<u8> {
         }
     }
     finish(&c, size, ss)
+}
+
+/// The app icon with a red circle and a number in the top right corner
+/// (Windows taskbar: shows how many new files wait). 10 and more show as "9+".
+#[cfg_attr(target_os = "macos", allow(dead_code))] // used on Windows
+pub fn logo_with_badge(size: usize, n: usize) -> Vec<u8> {
+    let mut px = logo_rgba(size);
+    if n == 0 {
+        return px;
+    }
+    let ss = 4;
+    let mut c = Canvas::new(size * ss);
+    let (cx, cy, r) = (0.73f32, 0.27f32, 0.25f32);
+    let ring: Vec<(f32, f32)> = (0..48)
+        .map(|i| {
+            let a = i as f32 / 48.0 * std::f32::consts::TAU;
+            (cx + (r + 0.035) * a.cos(), cy + (r + 0.035) * a.sin())
+        })
+        .collect();
+    c.poly(&ring, &|_, _| [255, 255, 255, 255]);
+    let disc: Vec<(f32, f32)> = ring.iter().map(|&(x, y)| (cx + (x - cx) * r / (r + 0.035), cy + (y - cy) * r / (r + 0.035))).collect();
+    c.poly(&disc, &|_, _| [226, 46, 46, 255]);
+
+    // the number, drawn with simple segments (like a digital clock)
+    let text: Vec<char> = if n > 9 { vec!['9', '+'] } else { n.to_string().chars().collect() };
+    let (h, w) = (0.24f32, 0.13f32);
+    let gap = 0.03f32;
+    let total = text.len() as f32 * w + (text.len() as f32 - 1.0) * gap;
+    let mut x = cx - total / 2.0;
+    let y = cy - h / 2.0;
+    let t = w * 0.26;
+    let white = |_: f32, _: f32| -> Col { [255, 255, 255, 255] };
+    for ch in text {
+        let seg = |c: &mut Canvas, x0: f32, y0: f32, x1: f32, y1: f32| c.poly(&[(x0, y0), (x1, y0), (x1, y1), (x0, y1)], &white);
+        if ch == '+' {
+            seg(&mut c, x, y + h / 2.0 - t / 2.0, x + w, y + h / 2.0 + t / 2.0);
+            seg(&mut c, x + w / 2.0 - t / 2.0, y + h * 0.2, x + w / 2.0 + t / 2.0, y + h * 0.8);
+        } else {
+            // segments a b c d e f g
+            let on: &[bool; 7] = match ch {
+                '0' => &[true, true, true, true, true, true, false],
+                '1' => &[false, true, true, false, false, false, false],
+                '2' => &[true, true, false, true, true, false, true],
+                '3' => &[true, true, true, true, false, false, true],
+                '4' => &[false, true, true, false, false, true, true],
+                '5' => &[true, false, true, true, false, true, true],
+                '6' => &[true, false, true, true, true, true, true],
+                '7' => &[true, true, true, false, false, false, false],
+                '8' => &[true; 7],
+                _ => &[true, true, true, true, false, true, true],
+            };
+            let mid = y + h / 2.0;
+            if on[0] { seg(&mut c, x, y, x + w, y + t); }
+            if on[1] { seg(&mut c, x + w - t, y, x + w, mid + t / 2.0); }
+            if on[2] { seg(&mut c, x + w - t, mid - t / 2.0, x + w, y + h); }
+            if on[3] { seg(&mut c, x, y + h - t, x + w, y + h); }
+            if on[4] { seg(&mut c, x, mid - t / 2.0, x + t, y + h); }
+            if on[5] { seg(&mut c, x, y, x + t, mid + t / 2.0); }
+            // a shorter middle bar keeps the 3 from looking like a mirrored E
+            let gx = if ch == '3' { x + w * 0.35 } else { x };
+            if on[6] { seg(&mut c, gx, mid - t / 2.0, x + w, mid + t / 2.0); }
+        }
+        x += w + gap;
+    }
+    let badge = finish(&c, size, ss);
+    // lay the badge over the icon
+    for (p, b) in px.chunks_mut(4).zip(badge.chunks(4)) {
+        let a = b[3] as f32 / 255.0;
+        if a > 0.0 {
+            for k in 0..3 {
+                p[k] = (p[k] as f32 * (1.0 - a) + b[k] as f32 * a) as u8;
+            }
+            p[3] = p[3].max(b[3]);
+        }
+    }
+    px
 }
