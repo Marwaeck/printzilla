@@ -76,6 +76,8 @@ impl DamApp {
         let list_h = (screen.height() - 470.0).clamp(150.0, 520.0);
         let mut close = false;
         let mut start = false;
+        let mut open_watch = false;
+        let mut ignore_selected = false;
         let running = self.import.as_ref().map(|d| d.running.is_some()).unwrap_or(false);
         let cfg = &mut self.cfg;
         let lib = &self.lib;
@@ -179,6 +181,30 @@ impl DamApp {
 
                 // --- 1: folder -----------------------------------------------
                 let mut rescan = false;
+                if d.from_watch {
+                    egui::Frame::new().fill(FIELD).corner_radius(10.0).inner_margin(egui::Margin::symmetric(14, 10)).show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            let (r, _) = ui.allocate_exact_size(Vec2::new(26.0, 30.0), Sense::hover());
+                            paint_folder(ui.painter(), r.center(), ACCENT);
+                            ui.allocate_ui(Vec2::new(ui.available_width() - 170.0, 34.0), |ui| {
+                                ui.vertical(|ui| {
+                                    ui.label(RichText::new("Neu in den überwachten Ordnern").size(11.5).color(MUTED));
+                                    let names: Vec<String> = cfg
+                                        .watch_folders
+                                        .iter()
+                                        .map(|w| w.path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default())
+                                        .collect();
+                                    ui.add(egui::Label::new(RichText::new(names.join(", ")).size(13.5).color(TEXT)).truncate());
+                                });
+                            });
+                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                if ui.add(egui::Button::new("Ordner überwachen …").min_size(Vec2::new(160.0, 32.0))).clicked() {
+                                    open_watch = true;
+                                }
+                            });
+                        });
+                    });
+                } else {
                 egui::Frame::new().fill(FIELD).corner_radius(10.0).inner_margin(egui::Margin::symmetric(14, 10)).show(ui, |ui| {
                     ui.horizontal(|ui| {
                         let (r, _) = ui.allocate_exact_size(Vec2::new(26.0, 30.0), Sense::hover());
@@ -210,6 +236,7 @@ impl DamApp {
                         });
                     });
                 });
+                }
                 ui.add_space(10.0);
 
                 // --- summary + settings ---------------------------------------
@@ -228,6 +255,7 @@ impl DamApp {
                             ui.label(RichText::new(format!("· {} Ordner", folders.len())).color(MUTED));
                         }
                     }
+                    if !d.from_watch {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         let arrow = if d.show_options { "▴" } else { "▾" };
                         if ui
@@ -238,8 +266,9 @@ impl DamApp {
                             d.show_options = !d.show_options;
                         }
                     });
+                    }
                 });
-                if d.show_options {
+                if d.show_options && !d.from_watch {
                     ui.add_space(4.0);
                     egui::Frame::new().fill(FIELD).corner_radius(10.0).inner_margin(egui::Margin::symmetric(14, 10)).show(ui, |ui| {
                         ui.set_width(ui.available_width());
@@ -436,6 +465,14 @@ impl DamApp {
                             if ui.add(egui::Button::new("Abbrechen").min_size(Vec2::new(100.0, 34.0))).clicked() {
                                 close = true;
                             }
+                            if d.from_watch
+                                && ui
+                                    .add_enabled(sel > 0, egui::Button::new("Nicht mehr anzeigen").min_size(Vec2::new(0.0, 34.0)))
+                                    .on_hover_text("Die ausgewählten Dateien bleiben, wo sie sind, und werden nicht mehr gemeldet")
+                                    .clicked()
+                            {
+                                ignore_selected = true;
+                            }
                         });
                     });
                     let (hint, col) = match cfg.after_import {
@@ -451,6 +488,25 @@ impl DamApp {
             });
 
         if !running && ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            close = true;
+        }
+        if ignore_selected {
+            if let Some(d) = self.import.as_mut() {
+                for f in d.found.iter().filter(|f| f.selected) {
+                    let key = crate::library::IgnoredFile { path: f.path.to_string_lossy().to_string(), size: f.size };
+                    if !self.cfg.watch_ignored.contains(&key) {
+                        self.cfg.watch_ignored.push(key);
+                    }
+                }
+                d.found.retain(|f| !f.selected);
+                if d.found.is_empty() {
+                    close = true;
+                }
+            }
+            self.watch_settings_changed();
+        }
+        if open_watch {
+            self.watch_open = true;
             close = true;
         }
         if start {

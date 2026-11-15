@@ -14,6 +14,9 @@ OBJ-Modelle direkt in 3D an.
   Kopie sicher in der Bibliothek liegt.
 - **3D-Ansicht** für 3MF (auch mehrteilige Projekte aus Slicern), STL und OBJ: drehen,
   verschieben, zoomen, Ansichten von vorne, von der Seite und von oben, Maße in Millimetern.
+- **Ordner überwachen:** PrintZilla behält z. B. den Download-Ordner im Blick und meldet neue
+  3D-Druck-Dateien (in der App, an der Menüleiste und auf Wunsch als Mitteilung). Mit einem Klick
+  übernimmst du sie – oder blendest sie aus. Ohne Bestätigung wird nichts kopiert.
 - **Direkt öffnen:** per Rechtsklick „In SolidCraft öffnen“ oder „Öffnen mit“ Bambu Studio,
   OrcaSlicer, PrusaSlicer, Cura oder einem selbst gewählten Programm.
 - **Symbol in der Menüleiste** (macOS) bzw. im Infobereich (Windows): PrintZilla öffnen,

@@ -82,6 +82,30 @@ pub struct Config {
     /// Show the PrintZilla symbol in the menu bar (macOS) / notification area (Windows).
     #[serde(default = "yes")]
     pub show_menu_icon: bool,
+    /// Folders PrintZilla keeps an eye on for new print files.
+    #[serde(default)]
+    pub watch_folders: Vec<WatchFolder>,
+    #[serde(default = "yes")]
+    pub watch_enabled: bool,
+    /// Also show a system message when new files turn up.
+    #[serde(default = "yes")]
+    pub watch_notify: bool,
+    /// Found files the person chose not to be told about again.
+    #[serde(default)]
+    pub watch_ignored: Vec<IgnoredFile>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct WatchFolder {
+    pub path: PathBuf,
+    #[serde(default = "yes")]
+    pub recursive: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct IgnoredFile {
+    pub path: String,
+    pub size: u64,
 }
 
 fn default_repo() -> String {
@@ -135,6 +159,10 @@ impl Config {
             program_paths: Default::default(),
             custom_programs: Vec::new(),
             show_menu_icon: true,
+            watch_folders: Vec::new(),
+            watch_enabled: true,
+            watch_notify: true,
+            watch_ignored: Vec::new(),
         }
     }
 
@@ -250,9 +278,9 @@ pub struct Found {
     pub maybe_known: bool,
 }
 
-pub fn scan(dir: &Path, recursive: bool, types: &[String], lib: &Library) -> Vec<Found> {
-    let known: HashSet<(String, u64)> = lib
-        .index
+/// (file name in lower case, size) of everything already in the library.
+pub fn known_set(lib: &Library) -> HashSet<(String, u64)> {
+    lib.index
         .entries
         .iter()
         .map(|e| {
@@ -262,8 +290,16 @@ pub fn scan(dir: &Path, recursive: bool, types: &[String], lib: &Library) -> Vec
                 .unwrap_or_default();
             (fname, e.size)
         })
-        .collect();
+        .collect()
+}
+
+pub fn scan(dir: &Path, recursive: bool, types: &[String], lib: &Library) -> Vec<Found> {
     let lib_dir = lib.dir.canonicalize().unwrap_or(lib.dir.clone());
+    scan_known(dir, recursive, types, &known_set(lib), &lib_dir)
+}
+
+/// Like `scan`, but without the library at hand (used by the folder watcher in the background).
+pub fn scan_known(dir: &Path, recursive: bool, types: &[String], known: &HashSet<(String, u64)>, lib_dir: &Path) -> Vec<Found> {
     let mut out = Vec::new();
     let walker = walkdir::WalkDir::new(dir)
         .max_depth(if recursive { usize::MAX } else { 1 })
@@ -278,7 +314,7 @@ pub fn scan(dir: &Path, recursive: bool, types: &[String], lib: &Library) -> Vec
         }
         let p = item.path();
         // never import from the library itself
-        if p.canonicalize().map(|c| c.starts_with(&lib_dir)).unwrap_or(false) {
+        if p.canonicalize().map(|c| c.starts_with(lib_dir)).unwrap_or(false) {
             continue;
         }
         let ext = p.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();

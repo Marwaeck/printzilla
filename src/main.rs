@@ -20,6 +20,8 @@ mod tray;
 mod update_ui;
 mod updater;
 mod viewer;
+mod watch_ui;
+mod watcher;
 mod widgets;
 
 use eframe::egui;

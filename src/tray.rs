@@ -9,12 +9,17 @@ pub enum TrayAction {
     Show,
     Import,
     Updates,
+    ImportNew,
+    Watch,
     Quit,
 }
 
 pub struct MenuIcon {
     #[cfg(any(windows, target_os = "macos"))]
-    _tray: tray_icon::TrayIcon,
+    tray: tray_icon::TrayIcon,
+    /// "N neue Dateien übernehmen …" – text and state follow the watcher.
+    #[cfg(any(windows, target_os = "macos"))]
+    new_files: tray_icon::menu::MenuItem,
     rx: Receiver<TrayAction>,
 }
 
@@ -37,6 +42,8 @@ impl MenuIcon {
 
             let show = MenuItem::new("PrintZilla öffnen", true, None);
             let import = MenuItem::new("Dateien importieren …", true, None);
+            let new_files = MenuItem::new("Keine neuen Dateien", false, None);
+            let watch = MenuItem::new("Ordner überwachen …", true, None);
             let updates = MenuItem::new("Nach Updates suchen …", true, None);
             let version = MenuItem::new(format!("Version {}", crate::updater::CURRENT_VERSION), false, None);
             let quit = MenuItem::new("PrintZilla beenden", true, None);
@@ -44,6 +51,9 @@ impl MenuIcon {
             menu.append_items(&[
                 &show,
                 &import,
+                &PredefinedMenuItem::separator(),
+                &new_files,
+                &watch,
                 &PredefinedMenuItem::separator(),
                 &updates,
                 &version,
@@ -55,6 +65,8 @@ impl MenuIcon {
             let actions = vec![
                 (show.id().clone(), TrayAction::Show),
                 (import.id().clone(), TrayAction::Import),
+                (new_files.id().clone(), TrayAction::ImportNew),
+                (watch.id().clone(), TrayAction::Watch),
                 (updates.id().clone(), TrayAction::Updates),
                 (quit.id().clone(), TrayAction::Quit),
             ];
@@ -78,7 +90,7 @@ impl MenuIcon {
             #[cfg(windows)]
             let builder = builder.with_icon(tray_icon::Icon::from_rgba(crate::logo::logo_rgba(32), 32, 32).ok()?);
             let tray = builder.build().ok()?;
-            Some(MenuIcon { _tray: tray, rx })
+            Some(MenuIcon { tray, new_files, rx })
         }
         #[cfg(not(any(windows, target_os = "macos")))]
         {
@@ -87,6 +99,26 @@ impl MenuIcon {
             let _ = rx;
             None
         }
+    }
+
+    /// Shows how many new files wait in the watched folders (number next to the symbol on macOS).
+    pub fn set_pending(&self, n: usize) {
+        #[cfg(any(windows, target_os = "macos"))]
+        {
+            let text = match n {
+                0 => "Keine neuen Dateien".to_string(),
+                1 => "1 neue Datei übernehmen …".to_string(),
+                n => format!("{n} neue Dateien übernehmen …"),
+            };
+            self.new_files.set_text(text);
+            self.new_files.set_enabled(n > 0);
+            #[cfg(target_os = "macos")]
+            self.tray.set_title(if n > 0 { Some(n.to_string()) } else { None });
+            let tip = if n > 0 { format!("PrintZilla – {n} neue Dateien") } else { "PrintZilla".to_string() };
+            let _ = self.tray.set_tooltip(Some(tip));
+        }
+        #[cfg(not(any(windows, target_os = "macos")))]
+        let _ = n;
     }
 
     pub fn poll(&self) -> Vec<TrayAction> {

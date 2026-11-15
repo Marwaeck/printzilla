@@ -54,6 +54,8 @@ pub struct ImportDialog {
     pub skip_duplicates: bool,
     pub confirm_delete: bool,
     pub show_options: bool,
+    /// Files come from the watched folders (not from one chosen folder).
+    pub from_watch: bool,
     pub running: Option<Receiver<ImportMsg>>,
     pub progress: (usize, usize, String),
     pub report: Option<ImportReport>,
@@ -96,6 +98,11 @@ pub struct DamApp {
     /// The symbol in the menu bar / notification area (None when switched off).
     pub menu_icon: Option<crate::tray::MenuIcon>,
     pub about: crate::about_ui::About,
+    /// Background watcher for new files (None in preview pictures).
+    pub watcher: Option<crate::watcher::Watcher>,
+    /// The "Ordner überwachen" window is open.
+    pub watch_open: bool,
+    last_pending: usize,
     screenshot: Option<Screenshot>,
 }
 
@@ -150,6 +157,9 @@ impl DamApp {
             programs: Vec::new(),
             menu_icon: None,
             about: Default::default(),
+            watcher: None,
+            watch_open: false,
+            last_pending: 0,
             screenshot: screenshot.map(|path| Screenshot {
                 path,
                 frame: 0,
@@ -158,6 +168,9 @@ impl DamApp {
             }),
         };
         app.programs = crate::externals::programs(&app.cfg);
+        if app.persist {
+            app.watcher = Some(crate::watcher::Watcher::start(&cc.egui_ctx, &app.cfg, &app.lib));
+        }
         if app.persist && app.cfg.show_menu_icon {
             app.menu_icon = crate::tray::MenuIcon::create(&cc.egui_ctx);
         }
@@ -165,6 +178,29 @@ impl DamApp {
         if app.persist && app.cfg.check_updates {
             let repo = app.cfg.update_repo.clone();
             app.updater.start_check(&cc.egui_ctx, &repo, true);
+        }
+        // preview pictures only: pretend the watched Downloads folder has new files
+        if let Some(mode) = std::env::var_os("PRINTZILLA_DEMO_WATCH").filter(|_| !app.persist) {
+            let demo = std::env::temp_dir().join(format!("printzilla-watchdemo-{}", std::process::id())).join("Downloads");
+            let _ = std::fs::create_dir_all(&demo);
+            for name in ["Schraubendose.3mf", "Halter_v2.stl", "Werkzeugwand.step"] {
+                let _ = std::fs::write(demo.join(name), format!("Beispiel {name}"));
+            }
+            app.cfg.watch_folders = vec![crate::library::WatchFolder { path: demo.clone(), recursive: true }];
+            let lib_dir = app.lib.dir.clone();
+            let found = crate::library::scan_known(&demo, true, &app.cfg.import_types, &crate::library::known_set(&app.lib), &lib_dir)
+                .into_iter()
+                .map(|mut f| {
+                    f.rel_dir = "Downloads".into();
+                    f
+                })
+                .collect();
+            app.watcher = Some(crate::watcher::Watcher::with_pending(found));
+            if mode == "window" {
+                app.watch_open = true;
+            } else if mode == "import" {
+                app.open_import_found();
+            }
         }
         // preview pictures only: show the "Über PrintZilla" window
         if !app.persist && std::env::var_os("PRINTZILLA_DEMO_ABOUT").is_some() {
@@ -274,10 +310,63 @@ impl DamApp {
         }
     }
 
+    /// Opens the import window with the new files the watcher found.
+    pub fn open_import_found(&mut self) {
+        let found: Vec<Found> = self.watcher.as_ref().map(|w| w.pending.clone()).unwrap_or_default();
+        self.import = Some(ImportDialog {
+            folder: None,
+            found,
+            scanned: true,
+            skip_duplicates: true,
+            confirm_delete: false,
+            show_options: false,
+            from_watch: true,
+            running: None,
+            progress: (0, 0, String::new()),
+            report: None,
+        });
+    }
+
+    /// Tells the watcher about changed folders, file types or ignored files.
+    pub fn watch_settings_changed(&mut self) {
+        self.save_cfg();
+        if let Some(w) = &self.watcher {
+            w.update_settings(&self.cfg);
+            w.check_now();
+        }
+    }
+
+    fn handle_watcher(&mut self, ctx: &egui::Context) {
+        let Some(w) = self.watcher.as_mut() else { return };
+        let fresh = w.poll();
+        let n = w.pending.len();
+        if fresh > 0 {
+            let text = if fresh == 1 {
+                let name = w.pending.iter().rev().next().map(|f| f.name.clone()).unwrap_or_default();
+                format!("Neue Datei gefunden: {name}")
+            } else {
+                format!("{fresh} neue Dateien gefunden")
+            };
+            self.notify(ctx, format!("{text} – links auf »Übernehmen« klicken"));
+            if self.cfg.watch_notify {
+                crate::watcher::system_notification("PrintZilla", &format!("{text}. Jetzt in die Bibliothek übernehmen?"));
+            }
+        }
+        if n != self.last_pending {
+            self.last_pending = n;
+            if let Some(m) = &self.menu_icon {
+                m.set_pending(n);
+            }
+        }
+    }
+
     /// Switches the menu bar symbol on or off and remembers the choice.
     pub fn set_menu_icon(&mut self, ctx: &egui::Context, on: bool) {
         self.cfg.show_menu_icon = on;
         self.menu_icon = if on { crate::tray::MenuIcon::create(ctx) } else { None };
+        if let Some(m) = &self.menu_icon {
+            m.set_pending(self.last_pending);
+        }
         self.save_cfg();
     }
 
@@ -295,6 +384,8 @@ impl DamApp {
             match a {
                 TrayAction::Import => self.open_import(None),
                 TrayAction::Updates => self.open_updates(ctx),
+                TrayAction::ImportNew => self.open_import_found(),
+                TrayAction::Watch => self.watch_open = true,
                 _ => {}
             }
         }
@@ -372,6 +463,7 @@ impl DamApp {
             skip_duplicates: true,
             confirm_delete: false,
             show_options: false,
+            from_watch: false,
             running: None,
             progress: (0, 0, String::new()),
             report: None,
@@ -434,6 +526,9 @@ impl DamApp {
             let n = report.entries.len();
             let first = report.entries.first().map(|e| e.id);
             self.lib.add_entries(report.entries.clone());
+            if let Some(w) = &self.watcher {
+                w.update_known(&self.lib);
+            }
             if let Some(d) = self.import.as_mut() {
                 d.running = None;
                 d.report = Some(report);
@@ -647,11 +742,13 @@ impl eframe::App for DamApp {
             });
 
         self.updater.poll();
+        self.handle_watcher(&ctx);
         self.handle_menu_icon(&ctx);
         self.import_window(&ctx);
         self.remove_dialog(&ctx);
         self.update_window(&ctx);
         self.about_window(&ctx);
+        self.watch_window(&ctx);
 
         if let Some((text, until)) = self.toast.clone() {
             let now = ctx.input(|i| i.time);

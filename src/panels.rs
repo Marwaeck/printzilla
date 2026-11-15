@@ -65,6 +65,10 @@ impl DamApp {
                     self.change_library();
                 }
                 ui.separator();
+                if ui.button("Ordner überwachen …").clicked() {
+                    ui.close();
+                    self.watch_open = true;
+                }
                 if ui.button("Über PrintZilla …").clicked() {
                     ui.close();
                     self.about.open = true;
@@ -90,6 +94,7 @@ impl DamApp {
         });
         ui.add_space(8.0);
         self.update_hint(ui);
+        self.watch_hint(ui);
 
         egui::Panel::bottom("side_filter")
             .frame(egui::Frame::new().inner_margin(egui::Margin { left: 0, right: 0, top: 8, bottom: 2 }))

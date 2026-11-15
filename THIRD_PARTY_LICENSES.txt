@@ -156,6 +156,7 @@ PrintZilla includes the following open-source libraries and fonts.
 - lock_api 0.4.14 — MIT OR Apache-2.0 — https://github.com/Amanieu/parking_lot
 - log 0.4.35 — MIT OR Apache-2.0 — https://github.com/rust-lang/log
 - lru-slab 0.1.3 — MIT OR Apache-2.0 OR Zlib — https://github.com/Ralith/lru-slab
+- mac-notification-sys 0.6.15 — MIT/Apache-2.0 — https://github.com/h4llow3En/mac-notification-sys
 - memchr 2.8.3 — Unlicense OR MIT — https://github.com/BurntSushi/memchr
 - memmap2 0.9.12 — MIT OR Apache-2.0 — https://github.com/RazrFalcon/memmap2-rs
 - miniz_oxide 0.8.9 — MIT OR Zlib OR Apache-2.0 — https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide
@@ -166,6 +167,7 @@ PrintZilla includes the following open-source libraries and fonts.
 - naga 30.0.2 — MIT OR Apache-2.0 — https://github.com/gfx-rs/wgpu
 - naga-types 30.0.2 — MIT OR Apache-2.0 — https://github.com/gfx-rs/wgpu
 - nohash-hasher 0.2.0 — Apache-2.0 OR MIT — https://github.com/paritytech/nohash-hasher
+- notify-rust 4.19.0 — MIT OR Apache-2.0 — https://github.com/hoodie/notify-rust
 - num-conv 0.2.2 — MIT OR Apache-2.0 — https://github.com/jhpratt/num-conv
 - num-traits 0.2.19 — MIT OR Apache-2.0 — https://github.com/rust-num/num-traits
 - number_prefix 0.4.0 — MIT — https://github.com/ogham/rust-number-prefix
@@ -265,6 +267,7 @@ PrintZilla includes the following open-source libraries and fonts.
 - sync_wrapper 1.0.2 — Apache-2.0 — https://github.com/Actyx/sync_wrapper
 - synstructure 0.14.0 — MIT — https://github.com/mystor/synstructure
 - sys-locale 0.3.2 — MIT OR Apache-2.0 — https://github.com/1Password/sys-locale
+- tauri-winrt-notification 0.8.1 — MIT OR Apache-2.0 — https://github.com/tauri-apps/winrt-notification
 - tempfile 3.27.0 — MIT OR Apache-2.0 — https://github.com/Stebalien/tempfile
 - termcolor 1.4.1 — Unlicense OR MIT — https://github.com/BurntSushi/termcolor
 - thiserror 2.0.21 — MIT OR Apache-2.0 — https://github.com/dtolnay/thiserror
@@ -333,6 +336,7 @@ PrintZilla includes the following open-source libraries and fonts.
 - windows-sys 0.61.2 — MIT OR Apache-2.0 — https://github.com/microsoft/windows-rs
 - windows-targets 0.52.6 — MIT OR Apache-2.0 — https://github.com/microsoft/windows-rs
 - windows-threading 0.2.1 — MIT OR Apache-2.0 — https://github.com/microsoft/windows-rs
+- windows-version 0.1.7 — MIT OR Apache-2.0 — https://github.com/microsoft/windows-rs
 - windows_x86_64_msvc 0.52.6 — MIT OR Apache-2.0 — https://github.com/microsoft/windows-rs
 - winit 0.30.13 — Apache-2.0 — https://github.com/rust-windowing/winit
 - writeable 0.6.4 — Unicode-3.0 — https://github.com/unicode-org/icu4x
@@ -1202,6 +1206,7 @@ Gilt für / Applies to:
   range-alloc 0.1.5 (LICENSE.APACHE)
   raw-window-handle 0.6.2 (LICENSE-APACHE.md)
   sync_wrapper 1.0.2 (LICENSE)
+  tauri-winrt-notification 0.8.1 (LICENSE_APACHE-2.0)
   time 0.3.55 (LICENSE-Apache)
   time-core 0.1.9 (LICENSE-Apache)
   vello_common 0.2.0 (LICENSE-APACHE)
@@ -3122,6 +3127,7 @@ Gilt für / Applies to:
   foreign-types 0.5.0 (LICENSE-APACHE)
   foreign-types-macros 0.2.4 (LICENSE-APACHE)
   foreign-types-shared 0.3.1 (LICENSE-APACHE)
+  notify-rust 4.19.0 (LICENSE-Apache)
   quick-error 2.0.1 (LICENSE-APACHE)
   unicode-general-category 1.1.0 (LICENSE)
   winit 0.30.13 (LICENSE)
@@ -9321,6 +9327,32 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ----------------------------------------------------------------
 Gilt für / Applies to:
+  notify-rust 4.19.0 (LICENSE-MIT)
+----------------------------------------------------------------
+MIT License
+
+Copyright (c) 2017 Hendrik Sollich
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+----------------------------------------------------------------
+Gilt für / Applies to:
   num-conv 0.2.2 (LICENSE-MIT)
 ----------------------------------------------------------------
 Copyright (c) Jacob Pratt
@@ -12715,6 +12747,56 @@ SOFTWARE.
 
 ----------------------------------------------------------------
 Gilt für / Applies to:
+  tauri-winrt-notification 0.8.1 (LICENSE.spdx)
+----------------------------------------------------------------
+SPDXVersion: SPDX-2.1
+DataLicense: CC0-1.0
+PackageName: winrt-notification
+DataFormat: SPDXRef-1
+PackageSupplier: Organization: The Tauri Programme in the Commons Conservancy
+PackageHomePage: https://tauri.app
+PackageLicenseDeclared: Apache-2.0
+PackageLicenseDeclared: MIT
+PackageCopyrightText: 2022-2022, The Tauri Programme in the Commons Conservancy
+PackageSummary: <text>An incomplete wrapper over the WinRT toast api.
+                </text>
+PackageComment: <text>The package includes the following libraries; see
+Relationship information.
+                </text>
+Created: 2019-05-20T09:00:00Z
+PackageDownloadLocation: git://github.com/tauri-apps/winrt-notification
+PackageDownloadLocation: git+https://github.com/tauri-apps/winrt-notification.git
+PackageDownloadLocation: git+ssh://github.com/tauri-apps/winrt-notification.git
+Creator: Person: Daniel Thompson-Yvetot
+
+----------------------------------------------------------------
+Gilt für / Applies to:
+  tauri-winrt-notification 0.8.1 (LICENSE_MIT)
+----------------------------------------------------------------
+MIT License
+
+Copyright (c) 2017 - Present Tauri Apps Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+----------------------------------------------------------------
+Gilt für / Applies to:
   tempfile 3.27.0 (LICENSE-MIT)
 ----------------------------------------------------------------
 Copyright (c) 2015 Steven Allen
@@ -15185,6 +15267,7 @@ Gilt für / Applies to:
   windows-sys 0.61.2 (license-apache-2.0)
   windows-targets 0.52.6 (license-apache-2.0)
   windows-threading 0.2.1 (license-apache-2.0)
+  windows-version 0.1.7 (license-apache-2.0)
   windows_x86_64_msvc 0.52.6 (license-apache-2.0)
 ----------------------------------------------------------------
 Apache License
@@ -15406,6 +15489,7 @@ Gilt für / Applies to:
   windows-sys 0.61.2 (license-mit)
   windows-targets 0.52.6 (license-mit)
   windows-threading 0.2.1 (license-mit)
+  windows-version 0.1.7 (license-mit)
   windows_x86_64_msvc 0.52.6 (license-mit)
 ----------------------------------------------------------------
 MIT License

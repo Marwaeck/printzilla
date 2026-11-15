@@ -127,3 +127,44 @@ fn license_texts_are_built_in() {
     }
     assert!(tp.contains("OFL.txt") && tp.contains("UFL.txt"), "Schriftlizenzen fehlen");
 }
+
+#[test]
+fn watcher_reports_finished_new_files_and_respects_ignore() {
+    use crate::library::{IgnoredFile, WatchFolder};
+    let base = workdir("watcher");
+    let watched = base.join("Downloads");
+    std::fs::create_dir_all(&watched).unwrap();
+    let lib = Library::open(&base.join("bibliothek"));
+    std::fs::write(watched.join("halter.stl"), b"solid h\nendsolid h\n").unwrap();
+    std::fs::write(watched.join("notiz.txt"), b"keine Druckdatei").unwrap();
+    // let the file "finish downloading"
+    std::thread::sleep(std::time::Duration::from_millis(4500));
+
+    let mut cfg = Config::with_dir(base.join("bibliothek"));
+    cfg.watch_folders = vec![WatchFolder { path: watched.clone(), recursive: true }];
+    let ctx = eframe::egui::Context::default();
+    let mut w = crate::watcher::Watcher::start(&ctx, &cfg, &lib);
+    // first look only notes the file, the second confirms it is unchanged
+    let wait = |w: &mut crate::watcher::Watcher| {
+        let mut fresh = 0;
+        for _ in 0..40 {
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            fresh += w.poll();
+        }
+        fresh
+    };
+    wait(&mut w);
+    w.check_now();
+    let fresh = wait(&mut w);
+    assert_eq!(fresh, 1, "die neue STL-Datei soll genau einmal gemeldet werden");
+    assert_eq!(w.pending.len(), 1);
+    assert_eq!(w.pending[0].name, "halter.stl");
+    assert_eq!(w.pending[0].rel_dir, "Downloads");
+
+    // "Nicht mehr anzeigen"
+    cfg.watch_ignored.push(IgnoredFile { path: watched.join("halter.stl").to_string_lossy().to_string(), size: w.pending[0].size });
+    w.update_settings(&cfg);
+    w.check_now();
+    wait(&mut w);
+    assert!(w.pending.is_empty(), "ignorierte Datei darf nicht mehr gemeldet werden");
+}
