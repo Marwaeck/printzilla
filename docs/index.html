@@ -1,0 +1,109 @@
+---
+layout: default
+title: PrintZilla – Deine Bibliothek für 3D-Druck-Dateien
+---
+
+<section class="hero">
+  <div class="wrap hero-inner">
+    <div class="hero-text">
+      <img class="hero-logo" src="{{ '/assets/img/printzilla-256.png' | relative_url }}" alt="PrintZilla-Symbol" width="112" height="112">
+      <h1>PrintZilla</h1>
+      <p class="lead">Deine Bibliothek für 3D-Druck-Dateien.</p>
+      <p class="sub">
+        Sammelt 3MF-, STL-, OBJ-, STEP- und G-Code-Dateien aus deinen Ordnern, zeigt Modelle in 3D
+        und meldet neue Downloads automatisch. Kostenlos für Windows und macOS.
+      </p>
+      <div class="badges">
+        <span class="type t-3mf">3MF</span><span class="type t-stl">STL</span><span class="type t-obj">OBJ</span><span class="type t-step">STEP</span><span class="type t-gcode">G-CODE</span>
+      </div>
+      <div class="cta">
+        <a class="btn primary" href="#download">Kostenlos herunterladen</a>
+        <a class="btn" href="{{ '/anleitung/' | relative_url }}">Anleitung lesen</a>
+      </div>
+      <p class="version muted small" data-release-version>Neueste Version auf GitHub</p>
+    </div>
+    <div class="hero-shot">
+      <img src="{{ '/assets/img/screenshot.png' | relative_url }}" alt="PrintZilla mit Bibliothek, Ordnern und 3D-Ansicht" loading="eager">
+    </div>
+  </div>
+</section>
+
+<section id="funktionen" class="section">
+  <div class="wrap">
+    <h2>Was PrintZilla kann</h2>
+    <div class="grid">
+      <article class="card">
+        <div class="icon">⬇</div>
+        <h3>Importieren mit Überblick</h3>
+        <p>Ordner wählen – PrintZilla zeigt vorher, welche Dateien neu sind und welche schon in deiner Bibliothek liegen. Originale behalten, in den Papierkorb legen oder löschen: erst wenn die Kopie sicher angekommen ist.</p>
+      </article>
+      <article class="card">
+        <div class="icon">◈</div>
+        <h3>3D-Ansicht</h3>
+        <p>3MF-Projekte (auch mehrteilige aus dem Slicer), STL und OBJ direkt ansehen: drehen, verschieben, zoomen, Ansicht von vorne, von der Seite oder von oben – mit Maßen in Millimetern.</p>
+      </article>
+      <article class="card">
+        <div class="icon">◎</div>
+        <h3>Ordner überwachen</h3>
+        <p>PrintZilla behält zum Beispiel deinen Download-Ordner im Blick. Neue 3D-Druck-Dateien meldet es mit einem Hinweis, einer Zahl am App-Symbol und auf Wunsch einer Mitteilung.</p>
+      </article>
+      <article class="card">
+        <div class="icon">▦</div>
+        <h3>Ordnen und finden</h3>
+        <p>Ordner, Schlagworte, Favoriten und Beschreibungen. Filter nach Dateityp, Suche und frei einstellbare Größe der Vorschaubilder.</p>
+      </article>
+      <article class="card">
+        <div class="icon">↗</div>
+        <h3>Direkt weiterarbeiten</h3>
+        <p>Per Rechtsklick „In SolidCraft öffnen“ oder „Öffnen mit“ Bambu Studio, OrcaSlicer, PrusaSlicer, Cura oder einem eigenen Programm.</p>
+      </article>
+      <article class="card">
+        <div class="icon">⟳</div>
+        <h3>Immer aktuell</h3>
+        <p>PrintZilla findet neue Versionen selbst und installiert sie auf Wunsch. Dazu ein Symbol in der Menüleiste bzw. im Infobereich für die wichtigsten Aktionen.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="wrap steps">
+    <h2>So einfach geht's</h2>
+    <ol class="steplist">
+      <li><span class="num">1</span><div><h3>Herunterladen und starten</h3><p>Zip-Datei für dein System laden, entpacken, PrintZilla öffnen.</p></div></li>
+      <li><span class="num">2</span><div><h3>Ordner importieren</h3><p>Auf „Importieren“ klicken oder einen Ordner einfach ins Fenster ziehen.</p></div></li>
+      <li><span class="num">3</span><div><h3>Ansehen und ordnen</h3><p>Modell anklicken, in 3D drehen, Schlagworte und Notizen vergeben.</p></div></li>
+      <li><span class="num">4</span><div><h3>Drucken</h3><p>Mit einem Rechtsklick direkt im Slicer oder in SolidCraft öffnen.</p></div></li>
+    </ol>
+  </div>
+</section>
+
+<section id="download" class="section">
+  <div class="wrap">
+    <h2>Download</h2>
+    <p class="muted center">Kostenlos und quelloffen. <span data-release-version>Immer die neueste Version.</span></p>
+    <div class="downloads">
+      <a class="dl" href="{{ site.download_base }}/PrintZilla-Windows.zip">
+        <span class="dl-os">Windows</span>
+        <span class="dl-detail">Windows 10 und 11 · Zip mit PrintZilla.exe</span>
+      </a>
+      <a class="dl" href="{{ site.download_base }}/PrintZilla-macOS-AppleSilicon.zip">
+        <span class="dl-os">macOS · Apple-Chip</span>
+        <span class="dl-detail">M1 und neuer · PrintZilla.app</span>
+      </a>
+      <a class="dl" href="{{ site.download_base }}/PrintZilla-macOS-Intel.zip">
+        <span class="dl-os">macOS · Intel</span>
+        <span class="dl-detail">ältere Macs · PrintZilla.app</span>
+      </a>
+    </div>
+    <div class="note">
+      <h3>Beim ersten Start</h3>
+      <p>PrintZilla ist nicht bei Microsoft oder Apple registriert, deshalb fragt dein System einmal nach:</p>
+      <ul>
+        <li><strong>Windows:</strong> Bei „Der Computer wurde durch Windows geschützt“ auf <em>Weitere Informationen</em> und dann <em>Trotzdem ausführen</em> klicken.</li>
+        <li><strong>macOS:</strong> PrintZilla.app in den Programme-Ordner ziehen, mit <em>Rechtsklick → Öffnen</em> starten und „Öffnen“ bestätigen.</li>
+      </ul>
+      <p class="small muted">Alle Versionen und Änderungen: <a href="{{ site.github_url }}/releases">Releases auf GitHub</a>.</p>
+    </div>
+  </div>
+</section>

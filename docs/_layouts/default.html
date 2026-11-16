@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="{{ site.lang | default: 'de-DE' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% seo %}
+  <link rel="icon" type="image/png" href="{{ '/assets/img/favicon.png' | relative_url }}">
+  <link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="{{ '/' | relative_url }}">
+        <img src="{{ '/assets/img/favicon.png' | relative_url }}" alt="" width="32" height="32">
+        <span>PrintZilla</span>
+      </a>
+      <nav class="nav">
+        <a href="{{ '/#funktionen' | relative_url }}">Funktionen</a>
+        <a href="{{ '/anleitung/' | relative_url }}">Anleitung</a>
+        <a href="{{ '/#download' | relative_url }}">Download</a>
+        <a href="{{ site.github_url }}">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {{ content }}
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <div>
+        <strong>PrintZilla</strong> · © 2026 {{ site.author }} ·
+        <a href="{{ site.github_url }}/blob/main/LICENSE">MIT-Lizenz</a> ·
+        <a href="{{ site.github_url }}/blob/main/THIRD_PARTY_LICENSES.txt">Lizenzen von Drittanbietern</a>
+      </div>
+      <div class="muted small">
+        SolidCraft, Bambu Studio, OrcaSlicer, PrusaSlicer und UltiMaker Cura sind Marken ihrer jeweiligen Inhaber.
+        PrintZilla steht in keiner Verbindung zu ihnen.
+      </div>
+    </div>
+  </footer>
+  <script src="{{ '/assets/js/release.js' | relative_url }}" defer></script>
+</body>
+</html>

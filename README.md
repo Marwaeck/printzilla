@@ -6,6 +6,8 @@ PrintZilla sammelt 3MF-, STL-, OBJ-, STEP- und G-Code-Dateien aus beliebigen Ord
 (z. B. dem Download-Ordner) in einer aufgeräumten Bibliothek und zeigt 3MF-, STL- und
 OBJ-Modelle direkt in 3D an.
 
+**Webseite:** [marwaeck.github.io/printzilla](https://marwaeck.github.io/printzilla) – mit Download und [Anleitung](https://marwaeck.github.io/printzilla/anleitung/).
+
 ## Was PrintZilla kann
 
 - **Importieren** aus einem frei wählbaren Ordner (auch mit Unterordnern). Du siehst vorher,
@@ -77,6 +79,12 @@ cargo test               # Tests
 
 Gebaut mit [egui/eframe](https://github.com/emilk/egui). Die 3D-Ansicht zeichnet PrintZilla
 selbst, ohne Grafikkarten-Abhängigkeiten.
+
+## Webseite
+
+Die Webseite liegt im Ordner `docs/` und wird von GitHub mit Jekyll gebaut
+(`.github/workflows/pages.yml`) – nach jeder Änderung an `docs/` automatisch.
+Einmalig einschalten: *Settings → Pages → Build and deployment → Source: GitHub Actions*.
 
 ## Lizenz
 

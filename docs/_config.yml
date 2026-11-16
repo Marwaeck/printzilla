@@ -1,0 +1,30 @@
+# PrintZilla website (GitHub Pages, built with Jekyll)
+title: PrintZilla
+tagline: Deine Bibliothek für 3D-Druck-Dateien
+description: >-
+  PrintZilla sammelt 3MF-, STL-, OBJ-, STEP- und G-Code-Dateien aus deinen Ordnern,
+  zeigt Modelle in 3D und meldet neue Downloads automatisch. Kostenlos für Windows und macOS.
+lang: de-DE
+url: "https://marwaeck.github.io"
+baseurl: "/printzilla"
+repository: Marwaeck/printzilla
+author: Marwaeck
+
+# links used on the pages
+github_url: "https://github.com/Marwaeck/printzilla"
+releases_url: "https://github.com/Marwaeck/printzilla/releases/latest"
+download_base: "https://github.com/Marwaeck/printzilla/releases/latest/download"
+
+# picture shown when the page is shared
+image: /assets/img/social-card.png
+
+plugins:
+  - jekyll-seo-tag
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  auto_ids: true
+
+exclude:
+  - README.md
