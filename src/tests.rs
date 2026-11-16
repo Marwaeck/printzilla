@@ -181,3 +181,14 @@ fn icon_with_number_renders() {
     }
     assert_eq!(crate::logo::logo_with_badge(64, 0), crate::logo::logo_rgba(64));
 }
+
+/// Outside PrintZilla.app there is no app identifier: then no system message is sent,
+/// so macOS never asks "Which program …?" (the old "use_default" lookup).
+#[cfg(target_os = "macos")]
+#[test]
+fn no_program_question_outside_the_app_package() {
+    assert_eq!(crate::watcher::own_bundle_id(), None);
+    assert!(!crate::watcher::macos_sender_ready());
+    // must return at once without asking anything
+    crate::watcher::system_notification("PrintZilla", "Test");
+}

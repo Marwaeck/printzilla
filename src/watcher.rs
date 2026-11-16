@@ -194,6 +194,10 @@ pub fn downloads_folder() -> Option<PathBuf> {
 /// A system message (macOS Mitteilungen / Windows notification). Errors are ignored:
 /// the hint in PrintZilla and on the menu bar symbol always works.
 pub fn system_notification(title: &str, body: &str) {
+    #[cfg(target_os = "macos")]
+    if !macos_sender_ready() {
+        return;
+    }
     #[cfg(any(windows, target_os = "macos"))]
     {
         let (title, body) = (title.to_string(), body.to_string());
@@ -205,4 +209,25 @@ pub fn system_notification(title: &str, body: &str) {
     {
         let _ = (title, body);
     }
+}
+
+/// macOS needs to know which app sends a message. Without that, the notification library
+/// looks for an app called "use_default" and macOS asks "Which program …?". So PrintZilla
+/// registers its own identifier once; outside the app package (no identifier) it sends no
+/// system messages – the hint in the sidebar and the number on the icon still appear.
+#[cfg(target_os = "macos")]
+pub(crate) fn macos_sender_ready() -> bool {
+    static READY: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *READY.get_or_init(|| match own_bundle_id() {
+        Some(id) => notify_rust::set_application(&id).is_ok(),
+        None => false,
+    })
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn own_bundle_id() -> Option<String> {
+    let bundle = objc2_foundation::NSBundle::mainBundle();
+    #[allow(unused_unsafe)]
+    let id = unsafe { bundle.bundleIdentifier() };
+    id.map(|s| s.to_string()).filter(|s| !s.is_empty())
 }
