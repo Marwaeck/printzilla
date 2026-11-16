@@ -27,6 +27,14 @@ mod widgets;
 
 use eframe::egui;
 
+/// The icon PrintZilla gives the system while it runs. macOS gets the version with
+/// Apple's margins, otherwise the Dock icon looks larger than all others.
+fn app_icon() -> egui::IconData {
+    let size = if cfg!(target_os = "macos") { 512 } else { 256 };
+    let rgba = if cfg!(target_os = "macos") { logo::logo_rgba_macos(size) } else { logo::logo_rgba(size) };
+    egui::IconData { rgba, width: size as u32, height: size as u32 }
+}
+
 fn main() -> eframe::Result {
     let args: Vec<String> = std::env::args().collect();
     let screenshot = args
@@ -39,7 +47,7 @@ fn main() -> eframe::Result {
         .with_title("PrintZilla – 3D-Druck-Bibliothek")
         .with_inner_size([1360.0, 840.0])
         .with_min_inner_size([900.0, 560.0])
-        .with_icon(egui::IconData { rgba: logo::logo_rgba(256), width: 256, height: 256 });
+        .with_icon(app_icon());
 
     if card::enabled() {
         viewport = viewport.with_min_inner_size([320.0, 160.0]).with_inner_size(card::SIZE).with_resizable(false);

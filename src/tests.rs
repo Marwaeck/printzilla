@@ -91,6 +91,8 @@ fn writes_icon_files() {
     std::fs::create_dir_all(&dir).unwrap();
     let big = crate::logo::logo_rgba(1024);
     image::save_buffer(dir.join("printzilla.png"), &big, 1024, 1024, image::ExtendedColorType::Rgba8).unwrap();
+    let mac = crate::logo::logo_rgba_macos(1024);
+    image::save_buffer(dir.join("printzilla-macos.png"), &mac, 1024, 1024, image::ExtendedColorType::Rgba8).unwrap();
     let small = crate::logo::logo_rgba(256);
     image::save_buffer(dir.join("printzilla.ico"), &small, 256, 256, image::ExtendedColorType::Rgba8).unwrap();
 }

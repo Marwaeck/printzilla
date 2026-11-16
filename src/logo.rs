@@ -57,8 +57,8 @@ impl Canvas {
         let mut pts = Vec::new();
         let corners = [(x1 - r, y0 + r, -0.25f32), (x1 - r, y1 - r, 0.0), (x0 + r, y1 - r, 0.25), (x0 + r, y0 + r, 0.5)];
         for (cx, cy, start) in corners {
-            for i in 0..=8 {
-                let a = (start + i as f32 / 8.0 * 0.25) * std::f32::consts::TAU;
+            for i in 0..=24 {
+                let a = (start + i as f32 / 24.0 * 0.25) * std::f32::consts::TAU;
                 pts.push((cx + r * a.cos(), cy + r * a.sin()));
             }
         }
@@ -66,13 +66,58 @@ impl Canvas {
     }
 }
 
-/// Renders the logo as RGBA pixels (size × size).
+/// Renders the logo as RGBA pixels (size × size): the tile nearly fills the picture
+/// (used in the app, for Windows and the website).
 pub fn logo_rgba(size: usize) -> Vec<u8> {
+    logo_draw(size, 0.03, 0.2)
+}
+
+/// The app icon in Apple's proportions: the tile takes 824 of 1024 pixels in the middle,
+/// with a transparent margin and a soft shadow, so it is exactly as big as the other
+/// Dock icons (macOS draws icons edge to edge otherwise and they look too large).
+pub fn logo_rgba_macos(size: usize) -> Vec<u8> {
+    let inner = ((size as f32) * 824.0 / 1024.0).round() as usize;
+    let off = (size - inner) / 2;
+    let tile = logo_draw(inner, 0.0, 0.225);
+
+    // soft shadow under the tile
+    let ss = 4;
+    let mut c = Canvas::new(size * ss);
+    let m = off as f32 / size as f32;
+    let dy = 0.01f32;
+    for k in 0..8 {
+        let e = 0.001 + k as f32 * 0.003;
+        let r = 0.225 * (1.0 - 2.0 * m) + e;
+        c.rounded_rect(m - e, m - e + dy, 1.0 - m + e, 1.0 - m + e + dy, r, &|_, _| [0, 0, 0, 5]);
+    }
+    let mut out = finish(&c, size, ss);
+
+    // the tile on top (straight-alpha "over")
+    for y in 0..inner {
+        for x in 0..inner {
+            let t = &tile[(y * inner + x) * 4..(y * inner + x) * 4 + 4];
+            let o = ((y + off) * size + x + off) * 4;
+            let ta = t[3] as f32 / 255.0;
+            let ba = out[o + 3] as f32 / 255.0;
+            let a = ta + ba * (1.0 - ta);
+            if a > 0.0 {
+                for k in 0..3 {
+                    out[o + k] = ((t[k] as f32 * ta + out[o + k] as f32 * ba * (1.0 - ta)) / a).round().min(255.0) as u8;
+                }
+            }
+            out[o + 3] = (a * 255.0).round() as u8;
+        }
+    }
+    out
+}
+
+/// Draws the logo with the tile `inset` from the edges and the given corner radius.
+fn logo_draw(size: usize, inset: f32, radius: f32) -> Vec<u8> {
     let ss = 4;
     let mut c = Canvas::new(size * ss);
 
     // app-icon tile with a soft blue gradient
-    c.rounded_rect(0.03, 0.03, 0.97, 0.97, 0.2, &|_, y| {
+    c.rounded_rect(inset, inset, 1.0 - inset, 1.0 - inset, radius, &|_, y| {
         [(52.0 + 10.0 * y) as u8, (124.0 - 30.0 * y) as u8, (238.0 - 40.0 * y) as u8, 255]
     });
 

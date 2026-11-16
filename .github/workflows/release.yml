@@ -74,8 +74,8 @@ jobs:
           ICONSET=$(mktemp -d)/printzilla.iconset
           mkdir -p "$ICONSET"
           for s in 16 32 128 256 512; do
-            sips -z $s $s assets/printzilla.png --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
-            sips -z $((s*2)) $((s*2)) assets/printzilla.png --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
+            sips -z $s $s assets/printzilla-macos.png --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
+            sips -z $((s*2)) $((s*2)) assets/printzilla-macos.png --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
           done
           iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/printzilla.icns"
           cat > "$APP/Contents/Info.plist" <<PLIST
