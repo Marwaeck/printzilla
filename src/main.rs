@@ -13,7 +13,9 @@ mod import_ui;
 mod library;
 mod logo;
 mod model3d;
+mod origin;
 mod panels;
+mod printinfo;
 mod render;
 #[cfg(test)]
 mod tests;

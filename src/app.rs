@@ -104,6 +104,10 @@ pub struct DamApp {
     pub watch_open: bool,
     last_pending: usize,
     screenshot: Option<Screenshot>,
+    /// Older entries being read again in the background (print facts, download page).
+    refresh: Option<Receiver<Vec<Entry>>>,
+    /// The "Umbenennen" window: entry and the name being typed.
+    pub rename: Option<(u64, String)>,
 }
 
 impl DamApp {
@@ -122,7 +126,17 @@ impl DamApp {
         let mut selected = None;
         if !persist {
             crate::examples::create_examples(&mut lib);
-            selected = lib.index.entries.iter().find(|e| e.ext == "3mf").map(|e| e.id);
+            // preview pictures: PRINTZILLA_DEMO_SELECT=<name> picks another file than the first 3MF
+            let want = std::env::var("PRINTZILLA_DEMO_SELECT").ok();
+            selected = lib
+                .index
+                .entries
+                .iter()
+                .find(|e| match &want {
+                    Some(w) => e.name.contains(w.as_str()),
+                    None => e.ext == "3mf",
+                })
+                .map(|e| e.id);
         } else {
             cfg.save();
         }
@@ -160,6 +174,8 @@ impl DamApp {
             watcher: None,
             watch_open: false,
             last_pending: 0,
+            refresh: None,
+            rename: None,
             screenshot: screenshot.map(|path| Screenshot {
                 path,
                 frame: 0,
@@ -168,6 +184,7 @@ impl DamApp {
             }),
         };
         app.programs = crate::externals::programs(&app.cfg);
+        app.start_refresh(&cc.egui_ctx);
         if app.persist {
             app.watcher = Some(crate::watcher::Watcher::start(&cc.egui_ctx, &app.cfg, &app.lib));
         }
@@ -395,6 +412,103 @@ impl DamApp {
         }
     }
 
+    /// Reads older entries again in the background (once per INFO_REV).
+    fn start_refresh(&mut self, ctx: &egui::Context) {
+        let old: Vec<Entry> = self.lib.index.entries.iter().filter(|e| e.info_rev < library::INFO_REV).cloned().collect();
+        if old.is_empty() {
+            return;
+        }
+        let dir = self.lib.dir.clone();
+        let (tx, rx) = channel();
+        let c = ctx.clone();
+        std::thread::spawn(move || {
+            let _ = tx.send(library::refresh_old_entries(&dir, old));
+            c.request_repaint();
+        });
+        self.refresh = Some(rx);
+    }
+
+    fn poll_refresh(&mut self) {
+        let Some(rx) = &self.refresh else { return };
+        let Ok(updated) = rx.try_recv() else { return };
+        self.refresh = None;
+        for u in updated {
+            let mut new_thumb = false;
+            if let Some(e) = self.entry_mut(u.id) {
+                e.print = u.print;
+                if e.thumb.is_none() && u.thumb.is_some() {
+                    e.thumb = u.thumb;
+                    new_thumb = true;
+                }
+                if e.url.is_empty() {
+                    e.url = u.url;
+                }
+                e.info_rev = u.info_rev;
+            }
+            if new_thumb {
+                self.thumbs.remove(&u.id);
+            }
+        }
+        if self.persist {
+            self.lib.save();
+        }
+    }
+
+    /// Renames an entry (and its file) and tells the person how it went.
+    pub fn apply_rename(&mut self, ctx: &egui::Context, id: u64, name: &str) {
+        let before = self.entry(id).map(|e| e.file.clone());
+        match self.lib.rename(id, name) {
+            Ok(file) => {
+                if before.as_deref() != self.entry(id).map(|e| e.file.as_str()) {
+                    self.notify(ctx, format!("Umbenannt in „{file}“"));
+                }
+            }
+            Err(err) => self.notify(ctx, err),
+        }
+    }
+
+    fn rename_window(&mut self, ctx: &egui::Context) {
+        let Some((id, mut name)) = self.rename.clone() else { return };
+        let ext = self.entry(id).map(|e| e.ext.clone()).unwrap_or_default();
+        let mut close = false;
+        let mut apply = false;
+        egui::Window::new("Umbenennen")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
+            .show(ctx, |ui| {
+                ui.set_width(380.0);
+                ui.horizontal(|ui| {
+                    let r = ui.add(egui::TextEdit::singleline(&mut name).desired_width(320.0).margin(egui::Margin::symmetric(8, 6)));
+                    if !r.has_focus() && !r.lost_focus() {
+                        r.request_focus();
+                    }
+                    if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                        apply = true;
+                    }
+                    ui.label(RichText::new(format!(".{ext}")).color(MUTED));
+                });
+                ui.label(RichText::new("Die Datei in der Bibliothek bekommt denselben Namen.").size(12.0).color(MUTED));
+                ui.add_space(6.0);
+                ui.horizontal(|ui| {
+                    if ui.button("Abbrechen").clicked() {
+                        close = true;
+                    }
+                    if ui.add(egui::Button::new(RichText::new("Umbenennen").color(Color32::WHITE)).fill(ACCENT)).clicked() {
+                        apply = true;
+                    }
+                });
+            });
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            close = true;
+        }
+        if apply {
+            self.apply_rename(ctx, id, &name);
+            close = true;
+        }
+        self.rename = if close { None } else { Some((id, name)) };
+    }
+
     pub fn entry(&self, id: u64) -> Option<&Entry> {
         self.lib.index.entries.iter().find(|e| e.id == id)
     }
@@ -428,6 +542,8 @@ impl DamApp {
                     || e.file.to_lowercase().contains(&q)
                     || e.notes.to_lowercase().contains(&q)
                     || e.tags.iter().any(|t| t.to_lowercase().contains(&q))
+                    || e.url.to_lowercase().contains(&q)
+                    || e.print.as_ref().map(|p| p.materials.iter().any(|m| m.to_lowercase() == q)).unwrap_or(false)
             })
             .cloned()
             .collect();
@@ -708,7 +824,14 @@ impl eframe::App for DamApp {
             return;
         }
         self.poll_import(&ctx);
+        self.poll_refresh();
         self.ensure_viewer(&ctx);
+        // F2 renames the selected file (as in Windows Explorer)
+        if self.rename.is_none() && !ctx.egui_wants_keyboard_input() && ctx.input(|i| i.key_pressed(egui::Key::F2)) {
+            if let Some(e) = self.selected.and_then(|id| self.entry(id)) {
+                self.rename = Some((e.id, e.name.clone()));
+            }
+        }
         if self.import.as_ref().map(|d| d.running.is_some()).unwrap_or(false) {
             ctx.request_repaint_after(std::time::Duration::from_millis(100));
         }
@@ -750,6 +873,7 @@ impl eframe::App for DamApp {
         self.handle_menu_icon(&ctx);
         self.import_window(&ctx);
         self.remove_dialog(&ctx);
+        self.rename_window(&ctx);
         self.update_window(&ctx);
         self.about_window(&ctx);
         self.watch_window(&ctx);

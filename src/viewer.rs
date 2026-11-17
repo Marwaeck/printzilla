@@ -18,6 +18,16 @@ impl DamApp {
             return;
         };
         if !model3d::can_preview(&entry.ext) {
+            // G-Code: show the preview picture the slicer put into the file
+            let mut budget = 1;
+            let ctx = ui.ctx().clone();
+            if let Some(t) = entry.thumb.as_ref().and(self.thumb(&ctx, &entry, &mut budget)) {
+                let s = t.size_vec2();
+                let k = (rect.width() / s.x).min(rect.height() / s.y).min(2.0);
+                let r = Rect::from_center_size(rect.center(), s * k);
+                painter.image(t.id(), r, Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)), Color32::WHITE);
+                return;
+            }
             painter.text(rect.center() - Vec2::new(0.0, 14.0), Align2::CENTER_CENTER, type_icon(&entry.ext), FontId::proportional(40.0), MUTED);
             painter.text(
                 rect.center() + Vec2::new(0.0, 26.0),

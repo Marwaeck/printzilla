@@ -16,6 +16,15 @@ fn wide_button(ui: &mut egui::Ui, text: RichText) -> egui::Response {
     ui.add_sized([ui.available_width(), 28.0], egui::Button::new(text).fill(FIELD))
 }
 
+fn hex_color(s: &str) -> Option<Color32> {
+    let h = s.trim_start_matches('#');
+    if h.len() < 6 {
+        return None;
+    }
+    let v = u32::from_str_radix(&h[..6], 16).ok()?;
+    Some(Color32::from_rgb((v >> 16) as u8, (v >> 8) as u8, v as u8))
+}
+
 impl DamApp {
     pub fn inspector(&mut self, ui: &mut egui::Ui) {
         let Some(id) = self.selected else {
@@ -49,7 +58,17 @@ impl DamApp {
                     }
                 }
                 if r.lost_focus() {
-                    self.lib.save();
+                    // the file in the library gets the same name
+                    let ctx = ui.ctx().clone();
+                    let name = self.entry(id).map(|m| m.name.clone()).unwrap_or_default();
+                    if name.trim().is_empty() {
+                        if let Some(m) = self.entry_mut(id) {
+                            m.name = e.name.clone();
+                        }
+                        self.lib.save();
+                    } else {
+                        self.apply_rename(&ctx, id, &name);
+                    }
                 }
                 let (star, col) = if e.favorite { ("★", Color32::from_rgb(250, 200, 70)) } else { ("☆", MUTED) };
                 if ui
@@ -80,6 +99,42 @@ impl DamApp {
             if r.lost_focus() {
                 self.lib.save();
             }
+
+            // where the file came from
+            ui.add_space(4.0);
+            ui.horizontal(|ui| {
+                let mut url = e.url.clone();
+                let has = !url.trim().is_empty();
+                let w = ui.available_width() - if has { 96.0 } else { 0.0 };
+                let r = ui.add(
+                    egui::TextEdit::singleline(&mut url)
+                        .hint_text("Quelle: Link zu MakerWorld, Printables …")
+                        .margin(egui::Margin::symmetric(8, 6))
+                        .desired_width(w.max(60.0)),
+                );
+                if r.changed() {
+                    if let Some(m) = self.entry_mut(id) {
+                        m.url = url.clone();
+                    }
+                }
+                if r.lost_focus() {
+                    if let Some(m) = self.entry_mut(id) {
+                        m.url = crate::origin::normalize(&m.url);
+                    }
+                    self.lib.save();
+                }
+                if has {
+                    let label = crate::origin::label(&url);
+                    let short: String = if label.chars().count() > 11 { format!("{}…", label.chars().take(10).collect::<String>()) } else { label.clone() };
+                    if ui
+                        .add_sized([88.0, 26.0], egui::Button::new(RichText::new(format!("{short} ↗")).size(12.0)).fill(FIELD))
+                        .on_hover_text(format!("{url}\n\nIm Browser öffnen"))
+                        .clicked()
+                    {
+                        crate::origin::open_url(&crate::origin::normalize(&url));
+                    }
+                }
+            });
 
             // tags
             ui.add_space(8.0);
@@ -128,6 +183,53 @@ impl DamApp {
                     prop_row(ui, "Maße", &format!("{:.1} × {:.1} × {:.1} mm", s.size_mm[0], s.size_mm[1], s.size_mm[2]));
                     prop_row(ui, "Objekte", &s.objects.to_string());
                     prop_row(ui, "Dreiecke", &format_count(s.triangles));
+                }
+                if let Some(p) = &e.print {
+                    if let Some(t) = p.time_s {
+                        prop_row(ui, "Druckzeit", &crate::printinfo::format_duration(t));
+                    }
+                    let mut fil = Vec::new();
+                    if let Some(g) = p.filament_g {
+                        fil.push(format!("{}{g:.1} g", if p.filament_g_estimated { "≈ " } else { "" }));
+                    }
+                    if let Some(m) = p.filament_m {
+                        fil.push(format!("{m:.2} m"));
+                    }
+                    if !fil.is_empty() {
+                        prop_row(ui, "Filament", &fil.join(" · "));
+                    }
+                    if !p.materials.is_empty() || !p.colors.is_empty() {
+                        ui.label(RichText::new("Material").size(12.0).color(MUTED));
+                        ui.horizontal_wrapped(|ui| {
+                            ui.spacing_mut().item_spacing.x = 4.0;
+                            for c in p.colors.iter().take(16) {
+                                if let Some(col) = hex_color(c) {
+                                    let (r, _) = ui.allocate_exact_size(Vec2::splat(12.0), Sense::hover());
+                                    ui.painter().circle_filled(r.center(), 5.0, col);
+                                    ui.painter().circle_stroke(r.center(), 5.0, egui::Stroke::new(0.8, Color32::from_gray(110)));
+                                }
+                            }
+                            if !p.materials.is_empty() {
+                                ui.label(RichText::new(p.materials.join(", ")).family(egui::FontFamily::Monospace).size(11.5).color(TEXT));
+                            }
+                        });
+                        ui.end_row();
+                    }
+                    if let Some(n) = p.nozzle_mm {
+                        prop_row(ui, "Düse", &format!("{n} mm"));
+                    }
+                    if let Some(l) = p.layer_mm {
+                        prop_row(ui, "Schichthöhe", &format!("{l} mm"));
+                    }
+                    if let Some(n) = p.plates {
+                        prop_row(ui, "Druckplatten", &n.to_string());
+                    }
+                    if let Some(pr) = &p.printer {
+                        prop_row(ui, "Drucker", pr);
+                    }
+                    if let Some(sl) = &p.slicer {
+                        prop_row(ui, "Slicer", sl);
+                    }
                 }
                 prop_row(ui, "Importdatum", &library::format_date(e.imported));
                 prop_row(ui, "Herkunft", &e.source);

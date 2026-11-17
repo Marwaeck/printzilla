@@ -50,6 +50,8 @@ pub struct Model {
     pub thumbnail: Option<(Vec<u8>, u32, u32)>,
     #[allow(dead_code)]
     pub unit: String,
+    /// Slicer facts (3MF projects from Bambu Studio, OrcaSlicer, PrusaSlicer).
+    pub print: Option<crate::printinfo::PrintInfo>,
 }
 
 pub const PALETTE: [[u8; 3]; 8] = [
@@ -555,6 +557,8 @@ pub fn load_3mf(path: &Path) -> Result<Model, String> {
         }
     }
 
+    let print = crate::printinfo::from_3mf(&mut zip);
+
     let mut fl = Flattener {
         zip: &mut zip,
         files: HashMap::new(),
@@ -613,6 +617,7 @@ pub fn load_3mf(path: &Path) -> Result<Model, String> {
         metadata,
         thumbnail,
         unit,
+        print,
     })
 }
 

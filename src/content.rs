@@ -14,6 +14,7 @@ enum CardAction {
     AddProgram,
     Reveal,
     Favorite,
+    Rename,
     Remove,
 }
 
@@ -134,6 +135,10 @@ impl DamApp {
                     }
                     self.lib.save();
                 }
+                CardAction::Rename => {
+                    self.selected = Some(id);
+                    self.rename = self.entry(id).map(|e| (id, e.name.clone()));
+                }
                 CardAction::Remove => self.confirm_remove = Some(id),
             }
         }
@@ -205,9 +210,10 @@ fn tile(ui: &mut egui::Ui, e: &Entry, tex: Option<&TextureHandle>, selected: boo
     }
     let name_col = if selected { Color32::WHITE } else { TEXT };
     let h = centered_text(p, Pos2::new(rect.center().x, img.bottom() + 7.0), &e.name, 13.0, name_col, cell - 4.0, 2);
-    let info = match &e.summary {
-        Some(s) => format!("{} · {:.0}×{:.0}×{:.0} mm", library::human_size(e.size), s.size_mm[0], s.size_mm[1], s.size_mm[2]),
-        None => library::human_size(e.size),
+    let info = match (e.print.as_ref().filter(|p| p.sliced).and_then(|p| p.short()), &e.summary) {
+        (Some(short), _) => short,
+        (None, Some(s)) => format!("{} · {:.0}×{:.0}×{:.0} mm", library::human_size(e.size), s.size_mm[0], s.size_mm[1], s.size_mm[2]),
+        (None, None) => library::human_size(e.size),
     };
     centered_text(p, Pos2::new(rect.center().x, img.bottom() + 9.0 + h), &info, 11.0, MUTED, cell - 4.0, 1);
 
@@ -247,6 +253,12 @@ fn tile(ui: &mut egui::Ui, e: &Entry, tex: Option<&TextureHandle>, selected: boo
         }
         if ui.button(if e.favorite { "Kein Favorit mehr" } else { "Als Favorit markieren" }).clicked() {
             action = Some(CardAction::Favorite);
+        }
+        if ui.button("Umbenennen …").clicked() {
+            action = Some(CardAction::Rename);
+        }
+        if !e.url.is_empty() && ui.button(format!("Quelle öffnen ({})", crate::origin::label(&e.url))).clicked() {
+            crate::origin::open_url(&e.url);
         }
         ui.separator();
         if ui.button("Entfernen …").clicked() {

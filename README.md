@@ -16,6 +16,11 @@ OBJ-Modelle direkt in 3D an.
   Kopie sicher in der Bibliothek liegt.
 - **3D-Ansicht** für 3MF (auch mehrteilige Projekte aus Slicern), STL und OBJ: drehen,
   verschieben, zoomen, Ansichten von vorne, von der Seite und von oben, Maße in Millimetern.
+- **Druckdaten aus dem Slicer:** Bei G-Code (auch binärem `.bgcode`) und gesliceten 3MF-Projekten
+  aus Bambu Studio, OrcaSlicer und PrusaSlicer zeigt PrintZilla Druckzeit, Filamentmenge,
+  Material und Farben, Düse, Schichthöhe, Drucker und Slicer – und das Vorschaubild aus dem G-Code.
+- **Quelle:** PrintZilla merkt sich, von welcher Seite (MakerWorld, Printables, Thingiverse …)
+  eine Datei heruntergeladen wurde, und öffnet sie mit einem Klick. Der Link lässt sich auch selbst eintragen.
 - **Ordner überwachen:** PrintZilla behält z. B. den Download-Ordner im Blick und meldet neue
   3D-Druck-Dateien (in der App, an der Menüleiste und auf Wunsch als Mitteilung). Mit einem Klick
   übernimmst du sie – oder blendest sie aus. Ohne Bestätigung wird nichts kopiert.
@@ -24,7 +29,8 @@ OBJ-Modelle direkt in 3D an.
 - **Symbol in der Menüleiste** (macOS) bzw. im Infobereich (Windows): PrintZilla öffnen,
   Dateien importieren oder nach Updates suchen – mit einem Klick.
 - **Ordnen und finden:** Ordner, Schlagworte, Favoriten, Beschreibung, Filter nach Dateityp,
-  Suche, frei einstellbare Größe der Vorschaubilder.
+  Suche, frei einstellbare Größe der Vorschaubilder. **Umbenennen** (Rechtsklick oder F2)
+  ändert auch den Dateinamen in der Bibliothek.
 - **Updates:** PrintZilla sucht beim Start nach einer neuen Version und installiert sie auf
   Wunsch selbst (Menü „PrintZilla ▾“ → „Nach Updates suchen …“).
 

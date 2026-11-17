@@ -46,7 +46,19 @@ pub struct Entry {
     pub thumb: Option<String>,
     #[serde(default)]
     pub summary: Option<ModelSummary>,
+    /// What the slicer wrote into the file (print time, filament, …).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub print: Option<crate::printinfo::PrintInfo>,
+    /// Web page the file came from (MakerWorld, Printables, …).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub url: String,
+    /// Which version of the file reading filled this entry (see INFO_REV).
+    #[serde(default)]
+    pub info_rev: u32,
 }
+
+/// Raised whenever PrintZilla learns to read more from files; older entries are read again.
+pub const INFO_REV: u32 = 1;
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Index {
@@ -252,6 +264,45 @@ impl Library {
         Ok(())
     }
 
+    /// Gives an entry a new name and renames its file in the library to match.
+    /// Returns the new file name.
+    pub fn rename(&mut self, id: u64, new_name: &str) -> Result<String, String> {
+        let new_name = new_name.trim();
+        if new_name.is_empty() {
+            return Err("Der Name darf nicht leer sein.".into());
+        }
+        let Some(pos) = self.index.entries.iter().position(|e| e.id == id) else {
+            return Err("Datei nicht gefunden.".into());
+        };
+        let e = self.index.entries[pos].clone();
+        let stem = safe_file_name(new_name);
+        if stem.is_empty() {
+            return Err("Dieser Name eignet sich nicht als Dateiname.".into());
+        }
+        let old_path = self.file_path(&e);
+        let dir = old_path.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| self.dir.clone());
+        let ext = Path::new(&e.file).extension().map(|x| x.to_string_lossy().to_string()).unwrap_or_else(|| e.ext.clone());
+        let fname = if ext.is_empty() { stem.clone() } else { format!("{stem}.{ext}") };
+        let current = old_path.file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+        let mut new_file = e.file.clone();
+        if fname != current {
+            // only the spelling changes ("halter" → "Halter"): same file on macOS/Windows
+            let target = if fname.to_lowercase() == current.to_lowercase() { dir.join(&fname) } else { unique_target(&dir, &fname) };
+            if old_path.exists() {
+                std::fs::rename(&old_path, &target).map_err(|err| format!("Umbenennen fehlgeschlagen: {err}"))?;
+            }
+            new_file = target
+                .strip_prefix(&self.dir)
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_else(|_| fname.clone());
+        }
+        let m = &mut self.index.entries[pos];
+        m.name = new_name.to_string();
+        m.file = new_file.clone();
+        self.save();
+        Ok(Path::new(&new_file).file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or(new_file))
+    }
+
     pub fn all_tags(&self) -> Vec<(String, usize)> {
         let mut map: std::collections::BTreeMap<String, usize> = Default::default();
         for e in &self.index.entries {
@@ -412,33 +463,102 @@ fn unique_target(dir: &Path, name: &str) -> PathBuf {
     unreachable!()
 }
 
-/// Creates the preview picture and model summary for a library file.
-pub fn make_preview(lib_dir: &Path, file: &Path, id: u64) -> (Option<String>, Option<ModelSummary>) {
+/// What make_preview found out about a file.
+#[derive(Default)]
+pub struct Preview {
+    pub thumb: Option<String>,
+    pub summary: Option<ModelSummary>,
+    pub print: Option<crate::printinfo::PrintInfo>,
+}
+
+fn save_thumb(lib_dir: &Path, id: u64, rgba: &[u8], w: u32, h: u32) -> Option<String> {
+    let thumb_name = format!("{id}.png");
+    let _ = std::fs::create_dir_all(Library::thumbs_dir(lib_dir));
+    let thumb_file = Library::thumbs_dir(lib_dir).join(&thumb_name);
+    image::save_buffer(&thumb_file, rgba, w, h, image::ExtendedColorType::Rgba8).is_ok().then_some(thumb_name)
+}
+
+/// Creates the preview picture, model summary and print facts for a library file.
+pub fn make_preview(lib_dir: &Path, file: &Path, id: u64) -> Preview {
     let ext = file.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    if matches!(ext.as_str(), "gcode" | "bgcode") {
+        let Ok((info, thumb)) = crate::printinfo::load_gcode(file) else {
+            return Preview::default();
+        };
+        return Preview {
+            thumb: thumb.and_then(|(rgba, w, h)| save_thumb(lib_dir, id, &rgba, w, h)),
+            summary: None,
+            print: (!info.is_empty()).then_some(info),
+        };
+    }
     if !crate::model3d::can_preview(&ext) {
-        return (None, None);
+        return Preview::default();
     }
     let Ok(model) = crate::model3d::load(file) else {
-        return (None, None);
+        return Preview::default();
     };
-    let thumb_name = format!("{id}.png");
-    let thumb_file = Library::thumbs_dir(lib_dir).join(&thumb_name);
-    let _ = std::fs::create_dir_all(Library::thumbs_dir(lib_dir));
-    let mut summary = None;
-    let mut saved = false;
+    let mut out = Preview {
+        print: model.print.clone(),
+        ..Default::default()
+    };
     if !model.mesh.tris.is_empty() {
         let prepared = crate::render::prepare(model.mesh.clone());
-        summary = Some(ModelSummary {
+        out.summary = Some(ModelSummary {
             objects: model.objects.len(),
             triangles: prepared.mesh.tris.len(),
             size_mm: prepared.size,
         });
         let fr = crate::render::thumbnail(&prepared, 256);
-        saved = image::save_buffer(&thumb_file, &fr.rgba, fr.width as u32, fr.height as u32, image::ExtendedColorType::Rgba8).is_ok();
+        out.thumb = save_thumb(lib_dir, id, &fr.rgba, fr.width as u32, fr.height as u32);
     } else if let Some((rgba, w, h)) = &model.thumbnail {
-        saved = image::save_buffer(&thumb_file, rgba, *w, *h, image::ExtendedColorType::Rgba8).is_ok();
+        out.thumb = save_thumb(lib_dir, id, rgba, *w, *h);
     }
-    (saved.then_some(thumb_name), summary)
+    out
+}
+
+/// Reads entries again that were imported before PrintZilla knew how to read
+/// print facts, preview pictures from G-Code or the download page.
+/// Returns the updated entries (only the fields that are filled in here change).
+pub fn refresh_old_entries(lib_dir: &Path, entries: Vec<Entry>) -> Vec<Entry> {
+    let mut out = Vec::new();
+    for mut e in entries {
+        let path = lib_dir.join(&e.file);
+        if matches!(e.ext.as_str(), "3mf" | "gcode" | "bgcode") && path.exists() {
+            if matches!(e.ext.as_str(), "gcode" | "bgcode") {
+                if let Ok((info, thumb)) = crate::printinfo::load_gcode(&path) {
+                    e.print = (!info.is_empty()).then_some(info);
+                    if e.thumb.is_none() {
+                        e.thumb = thumb.and_then(|(rgba, w, h)| save_thumb(lib_dir, e.id, &rgba, w, h));
+                    }
+                }
+            } else if let Ok(f) = std::fs::File::open(&path) {
+                if let Ok(mut zip) = zip::ZipArchive::new(f) {
+                    e.print = crate::printinfo::from_3mf(&mut zip);
+                }
+            }
+        }
+        if e.url.is_empty() {
+            // the original may still be where it was downloaded to
+            for p in [Path::new(&e.source), path.as_path()] {
+                if let Some(u) = crate::origin::download_url(p) {
+                    e.url = u;
+                    break;
+                }
+            }
+        }
+        e.info_rev = INFO_REV;
+        out.push(e);
+    }
+    out
+}
+
+/// Characters that are not allowed in file names on Windows or macOS.
+pub fn safe_file_name(name: &str) -> String {
+    let s: String = name
+        .chars()
+        .map(|c| if matches!(c, '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*') || c.is_control() { '_' } else { c })
+        .collect();
+    s.trim().trim_end_matches('.').trim().to_string()
 }
 
 pub fn run_import(job: ImportJob, mut progress: impl FnMut(ImportMsg)) -> ImportReport {
@@ -472,7 +592,9 @@ pub fn run_import(job: ImportJob, mut progress: impl FnMut(ImportMsg)) -> Import
                         .strip_prefix(&job.library_dir)
                         .map(|p| p.to_string_lossy().to_string())
                         .unwrap_or_else(|_| f.name.clone());
-                    let (thumb, summary) = make_preview(&job.library_dir, &target, id);
+                    let preview = make_preview(&job.library_dir, &target, id);
+                    // ask the system before the original may go to the trash
+                    let url = crate::origin::download_url(&f.path).unwrap_or_default();
                     let mut tags = Vec::new();
                     if job.folder_as_tag {
                         if let Some(last) = Path::new(&f.rel_dir).file_name() {
@@ -498,8 +620,11 @@ pub fn run_import(job: ImportJob, mut progress: impl FnMut(ImportMsg)) -> Import
                         tags,
                         notes: String::new(),
                         favorite: false,
-                        thumb,
-                        summary,
+                        thumb: preview.thumb,
+                        summary: preview.summary,
+                        print: preview.print,
+                        url,
+                        info_rev: INFO_REV,
                     });
                     id += 1;
                     known.insert(hash);

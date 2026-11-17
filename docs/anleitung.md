@@ -64,6 +64,27 @@ Projekten aus dem Slicer), **STL** und **OBJ**.
 
 Darunter stehen Maße, Anzahl der Objekte und Dreiecke sowie die Angaben aus der 3MF-Datei.
 
+## Druckdaten aus dem Slicer
+
+Bei **G-Code** (auch binärem `.bgcode` von PrusaSlicer) und bei **3MF-Projekten**, die nach dem
+Slicen gespeichert wurden, liest PrintZilla aus, was der Slicer hineingeschrieben hat:
+**Druckzeit**, **Filament** (Gramm und Meter), **Material** mit Farben, **Düse**,
+**Schichthöhe**, **Drucker**, **Slicer** und bei Bambu-/Orca-Projekten die Zahl der **Druckplatten**.
+Druckzeit und Filament stehen auch unter dem Vorschaubild in der Übersicht. G-Code bekommt das
+Vorschaubild, das der Slicer in die Datei gelegt hat.
+
+Gibt Cura nur die Länge an, rechnet PrintZilla das Gewicht für 1,75-mm-PLA aus (mit „≈“ markiert).
+Dateien, die schon vor diesem Update in der Bibliothek lagen, werden beim ersten Start einmal
+im Hintergrund nachgelesen.
+
+## Quelle
+
+Rechts unter der Beschreibung steht, **woher eine Datei stammt** – z. B. die Seite bei MakerWorld,
+Printables oder Thingiverse. Beim Import fragt PrintZilla das System danach (macOS und Windows
+merken sich bei Downloads aus dem Browser die Adresse). Fehlt der Link, kannst du ihn selbst
+einfügen. Der Knopf daneben öffnet die Seite im Browser, ebenso „Quelle öffnen“ im Rechtsklick-Menü.
+Die Suche findet Dateien auch über ihre Quelle (z. B. „printables“) oder ihr Material (z. B. „PETG“).
+
 ## Ordnen und finden
 
 - **Seitenleiste:** Alle Dateien, *Ohne Schlagwort*, *Favoriten*, *Zuletzt importiert*, Dateitypen und Ordner
@@ -71,6 +92,8 @@ Darunter stehen Maße, Anzahl der Objekte und Dreiecke sowie die Angaben aus der
 - **Filter** *Typen*, *Schlagworte*, *Favoriten* und die **Sortierung** stehen unter der Werkzeugleiste
 - **Regler** oben ändert die Größe der Vorschaubilder
 - Rechts kannst du **Name**, **Beschreibung** und **Schlagworte** ändern und mit dem Stern einen **Favoriten** markieren
+- **Umbenennen:** Rechtsklick → *Umbenennen …*, **F2** oder einfach rechts den Namen ändern – die Datei in
+  der Bibliothek bekommt denselben Namen (gibt es ihn schon, hängt PrintZilla „(2)“ an)
 
 ## In anderen Programmen öffnen
 
