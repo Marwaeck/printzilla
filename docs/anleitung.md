@@ -95,6 +95,36 @@ Die Suche findet Dateien auch über ihre Quelle (z. B. „printables“) oder ih
 - **Umbenennen:** Rechtsklick → *Umbenennen …*, **F2** oder einfach rechts den Namen ändern – die Datei in
   der Bibliothek bekommt denselben Namen (gibt es ihn schon, hängt PrintZilla „(2)“ an)
 
+## Sichern und wiederherstellen
+
+Im Menü **„PrintZilla ▾“ → „Sicherung erstellen …“** speicherst du die Bibliothek als ZIP-Datei:
+Namen, Schlagworte, Beschreibungen, Favoriten, Quellen und Vorschaubilder. Mit dem Haken
+**„Auch alle 3D-Dateien sichern“** kommen die Dateien selbst dazu – dann reicht die ZIP-Datei
+allein, um die Bibliothek z. B. auf einem neuen Rechner wiederherzustellen.
+
+**„Sicherung wiederherstellen …“** zeigt vorher, was passiert:
+
+- Dateien, die schon in der Bibliothek liegen (erkannt am Inhalt, nicht am Namen), bekommen
+  Name, Schlagworte, Beschreibung, Favorit und Quelle aus der Sicherung zurück.
+- Dateien, die fehlen, aber in der Sicherung stecken, werden in die Bibliothek zurückgeholt.
+- Es wird nichts gelöscht. Der bisherige Stand wird vorher im versteckten Ordner
+  `.druckarchiv` als `bibliothek-vor-wiederherstellung-….json` aufbewahrt.
+
+## Bibliothek prüfen
+
+Wenn du im Bibliotheksordner selbst Dateien verschiebst, umbenennst, löschst oder hineinlegst,
+bringt **„PrintZilla ▾“ → „Bibliothek prüfen …“** alles wieder in Ordnung. PrintZilla findet:
+
+- **verschobene oder umbenannte Dateien** (am Inhalt erkannt) und ordnet sie dem alten Eintrag
+  mit allen Schlagworten und Notizen wieder zu,
+- **Einträge ohne Datei** und nimmt sie auf Wunsch aus der Bibliothek,
+- **von außen dazugelegte Dateien** und nimmt sie auf (Unterordner werden zum Schlagwort);
+  doppelte Dateien nur, wenn du es ankreuzt,
+- **veränderte Dateien** und liest Maße, Vorschaubild und Druckdaten neu ein,
+- **alte Vorschaubilder** ohne Eintrag und löscht sie.
+
+Du siehst vorher die Liste und entscheidest per Haken, was übernommen wird.
+
 ## In anderen Programmen öffnen
 
 Rechtsklick auf eine Datei:

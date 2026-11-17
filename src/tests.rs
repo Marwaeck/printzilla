@@ -301,3 +301,153 @@ fn sliced_3mf_has_print_facts() {
     assert_eq!(info.slicer.as_deref(), Some("Bambu Studio 1.10.01.50"));
     assert!(info.sliced);
 }
+
+fn import_all(src: &std::path::Path, libdir: &std::path::Path) -> Library {
+    let mut lib = Library::open(libdir);
+    let types: Vec<String> = vec!["stl".into(), "gcode".into()];
+    let found = scan(src, true, &types, &lib);
+    let report = run_import(
+        ImportJob {
+            files: found,
+            library_dir: libdir.to_path_buf(),
+            known_hashes: lib.hashes(),
+            first_id: 1,
+            after: AfterImport::Keep,
+            skip_duplicates: true,
+            folder_as_tag: true,
+        },
+        |_| {},
+    );
+    lib.add_entries(report.entries);
+    lib
+}
+
+fn no_progress() -> impl FnMut(usize, usize, &str) {
+    |_, _, _| {}
+}
+
+/// Files moved, deleted, added and changed behind PrintZilla's back.
+#[test]
+fn check_finds_and_repairs_differences() {
+    use crate::maintenance::*;
+    let base = workdir("pruefen");
+    let src = base.join("quelle");
+    let libdir = base.join("bibliothek");
+    std::fs::create_dir_all(&src).unwrap();
+    std::fs::write(src.join("a.stl"), b"solid a\nendsolid a\n").unwrap();
+    std::fs::write(src.join("b.gcode"), b"G28 ; b\n").unwrap();
+    std::fs::write(src.join("c.stl"), b"solid c\nendsolid c\n").unwrap();
+    std::fs::write(src.join("d.stl"), b"solid d\nendsolid d\n").unwrap();
+    let mut lib = import_all(&src, &libdir);
+    assert_eq!(lib.index.entries.len(), 4);
+    let id_of = |lib: &Library, f: &str| lib.index.entries.iter().find(|e| e.file == f).unwrap().id;
+    let a = id_of(&lib, "a.stl");
+    let b = id_of(&lib, "b.gcode");
+    let c = id_of(&lib, "c.stl");
+
+    // nothing to do right after the import
+    let r = check_library(&libdir, &lib.index.entries, &mut no_progress());
+    assert!(r.is_clean(), "{r:?}");
+
+    std::fs::create_dir_all(libdir.join("Halter")).unwrap();
+    std::fs::rename(libdir.join("a.stl"), libdir.join("Halter").join("a-neu.stl")).unwrap();
+    std::fs::remove_file(libdir.join("b.gcode")).unwrap();
+    std::fs::write(libdir.join("Halter").join("neu.stl"), b"solid neu\nendsolid neu\n").unwrap();
+    std::fs::write(libdir.join("d-kopie.stl"), b"solid d\nendsolid d\n").unwrap();
+    std::fs::write(libdir.join("c.stl"), b"solid c\nfacet\nendsolid c\n").unwrap();
+    std::fs::write(libdir.join("notiz.txt"), b"wird ignoriert").unwrap();
+    std::fs::write(Library::thumbs_dir(&libdir).join("999.png"), b"x").unwrap();
+
+    let r = check_library(&libdir, &lib.index.entries, &mut no_progress());
+    assert_eq!(r.moved(), 1);
+    assert_eq!(r.gone(), 1);
+    assert_eq!(r.new_files(), 1);
+    assert_eq!(r.duplicates(), 1);
+    assert_eq!(r.changed, vec![c]);
+    assert_eq!(r.stray_thumbs, vec!["999.png".to_string()]);
+    let moved = r.missing.iter().find(|m| m.id == a).unwrap();
+    assert_eq!(moved.found_at.as_deref().map(|s| s.replace('\\', "/")), Some("Halter/a-neu.stl".to_string()));
+
+    let first = lib.index.next_id;
+    let res = repair(&libdir, &lib.index.entries, &r, Repair::default(), first, &mut no_progress());
+    apply_repair(&mut lib, &res);
+    assert_eq!(res.relinked.len(), 1);
+    assert_eq!(res.removed, vec![b]);
+    assert_eq!(res.added.len(), 1);
+    assert_eq!(res.added[0].tags, vec!["Halter".to_string()]);
+    assert_eq!(res.refreshed.len(), 1);
+    assert_eq!(res.thumbs_removed, 1);
+
+    // afterwards only the duplicate is left (it was not chosen)
+    let lib2 = Library::open(&libdir);
+    let r = check_library(&libdir, &lib2.index.entries, &mut no_progress());
+    assert_eq!((r.missing.len(), r.new_files(), r.changed.len(), r.stray_thumbs.len()), (0, 0, 0, 0), "{r:?}");
+    assert_eq!(r.duplicates(), 1);
+    assert_eq!(lib2.index.entries.len(), 4);
+}
+
+#[test]
+fn backup_and_restore() {
+    use crate::maintenance::*;
+    let base = workdir("sicherung");
+    let src = base.join("quelle");
+    let libdir = base.join("bibliothek");
+    std::fs::create_dir_all(src.join("Deko")).unwrap();
+    std::fs::write(src.join("a.stl"), b"solid a\nendsolid a\n").unwrap();
+    std::fs::write(src.join("Deko").join("vase.stl"), b"solid v\nendsolid v\n").unwrap();
+    let mut lib = import_all(&src, &libdir);
+    for e in &mut lib.index.entries {
+        e.notes = format!("Notiz zu {}", e.name);
+        e.tags.push("Wichtig".into());
+        e.favorite = true;
+        e.url = "https://www.printables.com/model/1".into();
+    }
+    lib.save();
+    let index = Index {
+        next_id: lib.index.next_id,
+        entries: lib.index.entries.clone(),
+    };
+    let small = base.join("klein.zip");
+    let full = base.join("komplett.zip");
+    create_backup(&libdir, &index, &small, false, &mut no_progress()).unwrap();
+    create_backup(&libdir, &index, &full, true, &mut no_progress()).unwrap();
+    let info = read_backup(&full).unwrap();
+    assert!(info.manifest.with_files);
+    assert_eq!(info.files.len(), 2);
+    assert!(read_backup(&small).unwrap().files.is_empty());
+    assert!(read_backup(&base.join("gibtsnicht.zip")).is_err());
+
+    // tags and notes lost: the small backup brings them back
+    for e in &mut lib.index.entries {
+        e.notes.clear();
+        e.tags.clear();
+        e.favorite = false;
+    }
+    lib.save();
+    let res = restore_backup(&libdir, &lib.index.entries, &small, lib.index.next_id, &mut no_progress()).unwrap();
+    assert_eq!(res.updated.len(), 2);
+    assert!(res.added.is_empty());
+    assert!(res.safety_copy.as_ref().map(|p| p.exists()).unwrap_or(false));
+    apply_restore(&mut lib, &res);
+    assert!(lib.index.entries.iter().all(|e| e.favorite && e.tags.contains(&"Wichtig".to_string()) && e.notes.starts_with("Notiz")));
+
+    // a new computer: empty library, the full backup brings everything back
+    let fresh = base.join("neu");
+    let mut lib2 = Library::open(&fresh);
+    let res = restore_backup(&fresh, &lib2.index.entries, &full, 1, &mut no_progress()).unwrap();
+    assert_eq!(res.added.len(), 2, "{:?}", res.errors);
+    apply_restore(&mut lib2, &res);
+    let lib2 = Library::open(&fresh);
+    assert_eq!(lib2.index.entries.len(), 2);
+    for e in &lib2.index.entries {
+        assert!(lib2.file_path(e).exists());
+        assert_eq!(e.url, "https://www.printables.com/model/1");
+        assert!(e.tags.contains(&"Wichtig".to_string()));
+    }
+    assert!(fresh.join("vase.stl").exists());
+    // the small backup can't bring files back
+    let empty = base.join("leer");
+    let lib3 = Library::open(&empty);
+    let res = restore_backup(&empty, &lib3.index.entries, &small, 1, &mut no_progress()).unwrap();
+    assert_eq!(res.unavailable.len(), 2);
+}

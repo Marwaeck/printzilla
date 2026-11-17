@@ -420,7 +420,7 @@ pub struct ImportJob {
     pub folder_as_tag: bool,
 }
 
-fn hash_file(p: &Path) -> std::io::Result<String> {
+pub fn hash_file(p: &Path) -> std::io::Result<String> {
     // FNV-1a 64 + length: quick and good enough to find identical files
     let mut f = std::fs::File::open(p)?;
     let mut h: u64 = 0xcbf29ce484222325;
@@ -443,7 +443,7 @@ fn hash_file(p: &Path) -> std::io::Result<String> {
     Ok(format!("{h:016x}{h2:016x}-{len}"))
 }
 
-fn unique_target(dir: &Path, name: &str) -> PathBuf {
+pub fn unique_target(dir: &Path, name: &str) -> PathBuf {
     let p = dir.join(name);
     if !p.exists() {
         return p;

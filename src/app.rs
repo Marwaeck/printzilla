@@ -108,6 +108,8 @@ pub struct DamApp {
     refresh: Option<Receiver<Vec<Entry>>>,
     /// The "Umbenennen" window: entry and the name being typed.
     pub rename: Option<(u64, String)>,
+    /// Backup, restore and check windows.
+    pub maint: crate::maintenance_ui::Maint,
 }
 
 impl DamApp {
@@ -176,6 +178,7 @@ impl DamApp {
             last_pending: 0,
             refresh: None,
             rename: None,
+            maint: Default::default(),
             screenshot: screenshot.map(|path| Screenshot {
                 path,
                 frame: 0,
@@ -218,6 +221,21 @@ impl DamApp {
             } else if mode == "import" {
                 app.open_import_found();
             }
+        }
+        // preview pictures only: "Bibliothek prüfen" after files changed behind PrintZilla's back
+        if !app.persist && std::env::var_os("PRINTZILLA_DEMO_CHECK").is_some() {
+            let dir = app.lib.dir.clone();
+            if let Some(e) = app.lib.index.entries.iter().find(|e| e.ext == "stl") {
+                let _ = std::fs::create_dir_all(dir.join("Halterungen"));
+                let _ = std::fs::rename(dir.join(&e.file), dir.join("Halterungen").join(&e.file));
+            }
+            if let Some(e) = app.lib.index.entries.iter().find(|e| e.ext == "step") {
+                let _ = std::fs::remove_file(dir.join(&e.file));
+            }
+            for name in ["Schraubendose.stl", "Kabelkanal.3mf"] {
+                let _ = std::fs::write(dir.join(name), format!("solid {name}\nendsolid\n"));
+            }
+            app.open_check(&cc.egui_ctx);
         }
         // preview pictures only: show the "Über PrintZilla" window
         if !app.persist && std::env::var_os("PRINTZILLA_DEMO_ABOUT").is_some() {
@@ -825,6 +843,7 @@ impl eframe::App for DamApp {
         }
         self.poll_import(&ctx);
         self.poll_refresh();
+        self.poll_maint(&ctx);
         self.ensure_viewer(&ctx);
         // F2 renames the selected file (as in Windows Explorer)
         if self.rename.is_none() && !ctx.egui_wants_keyboard_input() && ctx.input(|i| i.key_pressed(egui::Key::F2)) {
@@ -832,7 +851,7 @@ impl eframe::App for DamApp {
                 self.rename = Some((e.id, e.name.clone()));
             }
         }
-        if self.import.as_ref().map(|d| d.running.is_some()).unwrap_or(false) {
+        if self.import.as_ref().map(|d| d.running.is_some()).unwrap_or(false) || self.maint.running.is_some() {
             ctx.request_repaint_after(std::time::Duration::from_millis(100));
         }
 
@@ -874,6 +893,7 @@ impl eframe::App for DamApp {
         self.import_window(&ctx);
         self.remove_dialog(&ctx);
         self.rename_window(&ctx);
+        self.maint_window(&ctx);
         self.update_window(&ctx);
         self.about_window(&ctx);
         self.watch_window(&ctx);

@@ -31,6 +31,10 @@ OBJ-Modelle direkt in 3D an.
 - **Ordnen und finden:** Ordner, Schlagworte, Favoriten, Beschreibung, Filter nach Dateityp,
   Suche, frei einstellbare Größe der Vorschaubilder. **Umbenennen** (Rechtsklick oder F2)
   ändert auch den Dateinamen in der Bibliothek.
+- **Sichern und prüfen:** Sicherung der Bibliothek als ZIP – nur Namen, Schlagworte,
+  Beschreibungen, Favoriten, Quellen und Vorschaubilder oder komplett mit allen Dateien – und
+  wiederherstellen, ohne etwas zu löschen. „Bibliothek prüfen“ findet Einträge ohne Datei,
+  verschobene oder umbenannte Dateien, von außen dazugelegte und veränderte Dateien.
 - **Updates:** PrintZilla sucht beim Start nach einer neuen Version und installiert sie auf
   Wunsch selbst (Menü „PrintZilla ▾“ → „Nach Updates suchen …“).
 

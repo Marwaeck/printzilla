@@ -65,6 +65,20 @@ impl DamApp {
                     self.change_library();
                 }
                 ui.separator();
+                if ui.button("Bibliothek prüfen …").clicked() {
+                    ui.close();
+                    let ctx = ui.ctx().clone();
+                    self.open_check(&ctx);
+                }
+                if ui.button("Sicherung erstellen …").clicked() {
+                    ui.close();
+                    self.open_backup();
+                }
+                if ui.button("Sicherung wiederherstellen …").clicked() {
+                    ui.close();
+                    self.open_restore();
+                }
+                ui.separator();
                 if ui.button("Ordner überwachen …").clicked() {
                     ui.close();
                     self.watch_open = true;
